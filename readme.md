@@ -53,7 +53,7 @@ This project is built using **PlatformIO**. Make sure to install the following l
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/byte4geek/IkeDryBox.git](https://github.com/byte4geek/IkeDryBox.git)
+   git clone https://github.com/byte4geek/IkeDryBox.git
    ```
 
 2. Open the project in VSCode with the PlatformIO extension.
