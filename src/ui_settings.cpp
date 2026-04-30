@@ -12,9 +12,9 @@ lv_obj_t *ta_mqtt_host, *ta_mqtt_port, *ta_mqtt_user, *ta_mqtt_pass;
 
 lv_obj_t *btn_save, *btn_cancel;
 
-// New objects for the CUSTOM TAB
-lv_obj_t *slider_c_temp, *slider_c_time;
-lv_obj_t *lbl_val_c_temp, *lbl_val_c_time;
+// New objects for the CUSTOM TAB + MINUTES
+lv_obj_t *slider_c_temp, *slider_c_time, *slider_c_time_m;
+lv_obj_t *lbl_val_c_temp, *lbl_val_c_time, *lbl_val_c_time_m;
 
 void open_settings_cb(lv_event_t *e) {
     lv_slider_set_value(slider_kp, (int)Kp, LV_ANIM_OFF);
@@ -29,8 +29,14 @@ void open_settings_cb(lv_event_t *e) {
     lv_slider_set_value(slider_c_temp, (int)custom_temp, LV_ANIM_OFF);
     lv_label_set_text_fmt(lbl_val_c_temp, "Temp: %d C", (int)custom_temp);
     
-    lv_slider_set_value(slider_c_time, (int)(custom_time / 3600), LV_ANIM_OFF);
-    lv_label_set_text_fmt(lbl_val_c_time, "Time: %d h", (int)(custom_time / 3600));
+    long c_h = custom_time / 3600;
+    long c_m = (custom_time % 3600) / 60;
+    
+    lv_slider_set_value(slider_c_time, (int)c_h, LV_ANIM_OFF);
+    lv_label_set_text_fmt(lbl_val_c_time, "H: %d h", (int)c_h);
+    
+    lv_slider_set_value(slider_c_time_m, (int)c_m, LV_ANIM_OFF);
+    lv_label_set_text_fmt(lbl_val_c_time_m, "M: %d m", (int)c_m);
 
     // DHCP SYNCHRONIZATION ON THE DISPLAY
     if(use_dhcp) lv_obj_add_state(cb_dhcp, LV_STATE_CHECKED);
@@ -103,6 +109,9 @@ void slider_event_cb(lv_event_t *e) {
     } else if (slider == slider_c_time) {
         int val = lv_slider_get_value(slider_c_time);
         lv_label_set_text_fmt(lbl_val_c_time, "Time: %d h", val);
+    } else if (slider == slider_c_time_m) {
+        int val = lv_slider_get_value(slider_c_time_m);
+        lv_label_set_text_fmt(lbl_val_c_time_m, "Min: %d m", val);
     }
 }
 
@@ -120,7 +129,12 @@ void save_settings_cb(lv_event_t *e) {
     
     // 3. Save Custom Profile
     custom_temp = (float)lv_slider_get_value(slider_c_temp);
-    custom_time = (long)lv_slider_get_value(slider_c_time) * 3600;
+    long h = lv_slider_get_value(slider_c_time);
+    long m = lv_slider_get_value(slider_c_time_m);
+    custom_time = (h * 3600) + (m * 60);
+    
+    // Security: If you set 0 hours and 0 minutes, we force at least 1 minute!
+    if (custom_time <= 0) custom_time = 60;
     prefs.putFloat("c_temp", custom_temp);
     prefs.putLong("c_time", custom_time);
 
@@ -222,16 +236,29 @@ void build_settings_ui() {
     lv_obj_align(slider_c_temp, LV_ALIGN_TOP_LEFT, 110, 10);
     lv_obj_add_event_cb(slider_c_temp, slider_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
+    // --- hours  ---
     lbl_val_c_time = lv_label_create(t4);
     lv_obj_set_style_text_color(lbl_val_c_time, lv_color_hex(0x00FF00), 0);
     lv_obj_align(lbl_val_c_time, LV_ALIGN_TOP_LEFT, 0, 60);
-    lv_label_set_text_fmt(lbl_val_c_time, "Time: 5 h");
+    lv_label_set_text_fmt(lbl_val_c_time, "Hours: 5 h"); // Text updated
 
     slider_c_time = lv_slider_create(t4);
-    lv_slider_set_range(slider_c_time, 1, 24);
+    lv_slider_set_range(slider_c_time, 0, 24); // Permit 0 hours
     lv_obj_set_size(slider_c_time, 160, 15);
     lv_obj_align(slider_c_time, LV_ALIGN_TOP_LEFT, 110, 60);
     lv_obj_add_event_cb(slider_c_time, slider_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+
+    // --- MINUTEs (New) ---
+    lbl_val_c_time_m = lv_label_create(t4);
+    lv_obj_set_style_text_color(lbl_val_c_time_m, lv_color_hex(0x00FF00), 0);
+    lv_obj_align(lbl_val_c_time_m, LV_ALIGN_TOP_LEFT, 0, 110);
+    lv_label_set_text_fmt(lbl_val_c_time_m, "Min: 0 m");
+
+    slider_c_time_m = lv_slider_create(t4);
+    lv_slider_set_range(slider_c_time_m, 0, 59); // 0 - 59 minutes
+    lv_obj_set_size(slider_c_time_m, 160, 15);
+    lv_obj_align(slider_c_time_m, LV_ALIGN_TOP_LEFT, 110, 110);
+    lv_obj_add_event_cb(slider_c_time_m, slider_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     // --- TAB 2: NETWORK ---
     cb_dhcp = lv_checkbox_create(t2);

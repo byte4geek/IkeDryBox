@@ -100,10 +100,22 @@ const char index_html[] PROGMEM = R"rawliteral(
         <div id="config" class="panel">
             <h3 style="color:#00FF00; margin-top: 5px;">Custom Profile</h3>
             <div class="input-group"><label>Target Temp (&deg;C):</label><input type="number" id="c_temp" min="20" max="90"></div>
-            <div class="input-group"><label>Timer (Hours):</label><input type="number" id="c_time" min="1" max="24"></div>
+            <div class="input-group">
+                <label>Timer (H:M):</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="number" id="c_time_h" min="0" max="24" style="width:70px;" placeholder="Hours">
+                    <input type="number" id="c_time_m" min="0" max="59" style="width:70px;" placeholder="Mins">
+                </div>
+            </div>
             <hr style="border: 0; border-top: 1px solid #333; margin: 25px 0;">
 
-            <h3 style="color:#FFAA00">PID Tuning</h3>
+            <h3 style="color:#FFAA00; margin-bottom: 5px;">PID Tuning</h3>
+            <div style="font-size: 0.85em; color: #aaa; margin-bottom: 15px; line-height: 1.4; background: #1a1a1a; padding: 10px; border-radius: 5px;">
+                <strong>Kp (Proportional):</strong> Pushes the heater. Higher values heat up faster but can cause overshoot.<br>
+                <span style="display:block; margin-top:4px;"><strong>Ki (Integral):</strong> Corrects long-term errors to hit the exact target. Too high causes temperature oscillation.</span>
+                <span style="display:block; margin-top:4px;"><strong>Kd (Derivative):</strong> Acts as a brake as it approaches the target to prevent overshooting. Increases stability.</span>
+            </div>
+            
             <div class="input-group"><label>Kp:</label><input type="number" id="kp"></div>
             <div class="input-group"><label>Ki:</label><input type="number" step="0.01" id="ki"></div>
             <div class="input-group"><label>Kd:</label><input type="number" step="0.1" id="kd"></div>
@@ -166,7 +178,11 @@ const char index_html[] PROGMEM = R"rawliteral(
                     stat.innerText = "DRYING..."; stat.style.color = "#FFAA00";
                 } else {
                     btn.innerText = "START SESSION"; btn.className = "btn-main btn-start";
-                    stat.innerText = "READY"; stat.style.color = "#aaa";
+                    if (d.time_str === "0:00:00") {
+                        stat.innerText = "DONE!"; stat.style.color = "#00FF00";
+                    } else {
+                        stat.innerText = "READY"; stat.style.color = "#aaa";
+                    }
                 }
             });
         }
@@ -190,7 +206,8 @@ const char index_html[] PROGMEM = R"rawliteral(
             if(p.style.display == 'block') {
                 fetch('/api/config').then(r => r.json()).then(c => {
                     document.getElementById('c_temp').value = c.c_temp;
-                    document.getElementById('c_time').value = c.c_time;
+                    document.getElementById('c_time_h').value = c.c_time_h;
+                    document.getElementById('c_time_m').value = c.c_time_m;
                     document.getElementById('hostname').value = c.hostname;
                     document.getElementById('kp').value = c.kp;
                     document.getElementById('ki').value = c.ki;
@@ -246,7 +263,8 @@ const char index_html[] PROGMEM = R"rawliteral(
             let data = {
                 scr_off: document.getElementById('scr_off').checked,
                 c_temp: parseFloat(document.getElementById('c_temp').value),
-                c_time: parseInt(document.getElementById('c_time').value),
+                c_time_h: parseInt(document.getElementById('c_time_h').value) || 0,
+                c_time_m: parseInt(document.getElementById('c_time_m').value) || 0,
                 hostname: document.getElementById('hostname').value,
                 kp: parseFloat(document.getElementById('kp').value),
                 ki: parseFloat(document.getElementById('ki').value),
@@ -344,12 +362,40 @@ void setup_web_server() {
     server.on("/api/toggle", HTTP_POST, []() {
         is_running = !is_running;
         if(is_running) {
+             // AUTO-RESET TIMER AT ZERO
+             if (remaining_seconds <= 0) {
+                 current_filament.trim(); // String cleaning
+                 
+                 if (current_filament == "PLA")  remaining_seconds = 5 * 3600;
+                 else if (current_filament == "PETG") remaining_seconds = 6 * 3600;
+                 else if (current_filament == "ABS")  remaining_seconds = 6 * 3600;
+                 else if (current_filament == "TPU")  remaining_seconds = 8 * 3600;
+                 else if (current_filament == "Custom") remaining_seconds = custom_time;
+                 else remaining_seconds = 5 * 3600; // Fallback
+                 
+                 // Second safety net
+                 if (remaining_seconds <= 0) remaining_seconds = 5 * 3600;
+                 
+                 update_timer_label();
+             }
+             
              lv_label_set_text(label_btn_start, "STOP");
              lv_obj_set_style_bg_color(btn_start, lv_color_hex(0xCC0000), 0);
+             lv_label_set_text(label_status, "Status: DRYING...");
+             lv_obj_set_style_text_color(label_status, lv_color_hex(0xFFAA00), 0);
              ledcWrite(PWM_CH_FAN, 255);
         } else {
              lv_label_set_text(label_btn_start, "START");
              lv_obj_set_style_bg_color(btn_start, lv_color_hex(0x00AA00), 0);
+             
+             if (remaining_seconds <= 0) {
+                 lv_label_set_text(label_status, "Status: DONE!");
+                 lv_obj_set_style_text_color(label_status, lv_color_hex(0x00FF00), 0);
+             } else {
+                 lv_label_set_text(label_status, "Status: READY");
+                 lv_obj_set_style_text_color(label_status, lv_color_hex(0xAAAAAA), 0);
+             }
+             
              ledcWrite(PWM_CH_HEATER, 0); ledcWrite(PWM_CH_FAN, 0);
         }
         server.send(200, "text/plain", "OK");
@@ -362,7 +408,8 @@ void setup_web_server() {
             if (current_filament == "PETG") { remaining_seconds = 6 * 3600; pid_Setpoint = 65; }
             if (current_filament == "ABS")  { remaining_seconds = 6 * 3600; pid_Setpoint = 80; }
             if (current_filament == "TPU")  { remaining_seconds = 8 * 3600; pid_Setpoint = 55; }
-            if (current_filament == "Custom") { remaining_seconds = custom_time; pid_Setpoint = custom_temp; }
+            // if (current_filament == "Custom") { remaining_seconds = custom_time; pid_Setpoint = custom_temp; }
+            if (current_filament == "Custom") { remaining_seconds = custom_time; pid_Setpoint = custom_temp; } // <-- 10 SECONDs for debug
             
             update_timer_label();
             lv_label_set_text_fmt(label_target, "Target: %d C", (int)pid_Setpoint);
@@ -394,7 +441,8 @@ void setup_web_server() {
     server.on("/api/config", HTTP_GET, []() {
         JsonDocument doc;
         doc["c_temp"] = custom_temp;
-        doc["c_time"] = custom_time / 3600; // Send hours to WebUI
+        doc["c_time_h"] = custom_time / 3600; // Send hours to WebUI
+        doc["c_time_m"] = (custom_time % 3600) / 60; // Send minitues to WebUI
         
         doc["hostname"] = hostname;
         doc["kp"] = Kp; doc["ki"] = Ki; doc["kd"] = Kd;
@@ -432,7 +480,9 @@ void setup_web_server() {
                 
                 // Save Custom Profile
                 custom_temp = doc["c_temp"] | 50.0;
-                custom_time = (doc["c_time"] | 5) * 3600; // Convert hours to seconds
+                long c_h = doc["c_time_h"] | 5;
+                long c_m = doc["c_time_m"] | 0;
+                custom_time = (c_h * 3600) + (c_m * 60); // Convert hours to seconds
                 prefs.putFloat("c_temp", custom_temp);
                 prefs.putLong("c_time", custom_time);
 

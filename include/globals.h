@@ -80,8 +80,10 @@ extern float custom_temp;
 extern long custom_time;
 extern lv_obj_t *slider_c_temp;
 extern lv_obj_t *slider_c_time;
+extern lv_obj_t *slider_c_time_m; // <-- New: Minutes Slider
 extern lv_obj_t *lbl_val_c_temp;
 extern lv_obj_t *lbl_val_c_time;
+extern lv_obj_t *lbl_val_c_time_m; // <-- New: Minutes Label
 
 // --- Backlight ---
 extern bool auto_screen_off;
