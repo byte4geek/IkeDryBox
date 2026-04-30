@@ -86,7 +86,7 @@ void build_main_ui() {
     lv_obj_center(lbl_gear);
 
     lv_obj_t *title = lv_label_create(main_screen);
-    lv_label_set_text(title, "IkeDryBox v1.0");
+    lv_label_set_text_fmt(title, "IkeDryBox v%s", FIRMWARE_VERSION); // Centralized firmware version fron globals.h
     lv_obj_align(title, LV_ALIGN_TOP_LEFT, 10, 10);
     lv_obj_set_style_text_color(title, lv_color_hex(0xFFAA00), 0);
 

@@ -477,7 +477,7 @@ void setup_web_server() {
     server.on("/api/info", HTTP_GET, []() {
         JsonDocument doc;
         
-        doc["fw_version"] = "1.0.0 (IkeDryBox)";
+        doc["fw_version"] = String(FIRMWARE_VERSION) + " (IkeDryBox)"; // Centralized firmware version fron globals.h
         doc["sdk"] = ESP.getSdkVersion();
         doc["chip"] = ESP.getChipModel();
         
