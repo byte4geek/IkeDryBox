@@ -35,8 +35,8 @@ Key hardware connections based on the wiring diagram:
 
 ## 🔌 Wiring Diagram
 
-![IkeDryBox Wiring Diagram](IkeDryBox_wiring_diagram.jpg)
-*(Upload the wiring diagram image to your repository and name it `IkeDryBox_wiring_diagram.jpg` to display it here).*
+![IkeDryBox Wiring Diagram](IkeDryBox_wiring_diagram.png)
+*(Upload the wiring diagram image to your repository and name it `IkeDryBox_wiring_diagram.png` to display it here).*
 
 ## 💻 Software Dependencies
 
