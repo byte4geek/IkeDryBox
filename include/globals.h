@@ -9,7 +9,7 @@
 #include <PubSubClient.h>
 
 // --- Firmware Version ---
-#define FIRMWARE_VERSION "1.0.1"
+#define FIRMWARE_VERSION "1.0.3"
 
 // --- PIN and HARDWARE ---
 #define PIN_HEATER 5
@@ -41,6 +41,7 @@ extern lv_obj_t * touch_shield;
 extern double pid_Setpoint;
 extern double pid_Input;
 extern double pid_Output;
+extern int current_humidity; // for fix NaN
 extern double Kp, Ki, Kd;
 extern bool is_running;
 extern long remaining_seconds;

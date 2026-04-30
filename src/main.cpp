@@ -13,6 +13,7 @@
 Preferences prefs;
 
 double pid_Setpoint = 50.0, pid_Input, pid_Output;
+int current_humidity = 0; // Initialize at zero for fix NaN
 double Kp = 60.0, Ki = 0.90, Kd = 8.0; // The best numbers to start the tuning
 PID boxPID(&pid_Input, &pid_Output, &pid_Setpoint, Kp, Ki, Kd, DIRECT);
 
@@ -150,15 +151,21 @@ void setup() {
 
     WiFiManager wm;
     wm.setHostname(hostname.c_str()); // send hostname to the router
-    wm.autoConnect(String(hostname + "_Setup").c_str());
     wm.setConfigPortalTimeout(180); // If it doesn't connect within 3 minutes, it exits and restarts
+
+    // Call Autoconnect one time only
+    // 1. We create a REAL variable that occupies a fixed space in memory
+    String ap_name = hostname + "_Setup"; 
     
-    if (!wm.autoConnect("IkeDryBox_Setup")) {
+    // 2. We pass the key of this fixed variable to the WiFiManager
+    if (!wm.autoConnect(ap_name.c_str())) {
         Serial.println("WiFi connection failed and timeout reached. Force restart...");
         delay(3000);
         ESP.restart();
     }
-    Wire.begin(21, 22); sht31.begin(0x44);
+    
+    // Start sensor (one time only)
+    Wire.begin(21, 22);
     if (!sht31.begin(0x44)) {
         Serial.println("SHT31 sensor error!");
     }
@@ -258,13 +265,22 @@ void loop() {
         }
 
         if (millis() - last_sensor > 1000) {
-            float t = sht31.readTemperature(); float h = sht31.readHumidity();
+            float t = sht31.readTemperature(); 
+            float h = sht31.readHumidity();
+            
             if (!isnan(t)) {
                 pid_Input = t;
                 lv_label_set_text(label_temp, (String(t, 1) + " C").c_str());
-                lv_label_set_text(label_hum, (String(h, 0) + " %").c_str());
+                
                 if (t >= pid_Setpoint) lv_obj_set_style_text_color(label_temp, lv_color_hex(0x00FF00), 0);
                 else lv_obj_set_style_text_color(label_temp, lv_color_hex(0xFF3333), 0);
+
+                // --- Secure humidity managing and crentralized ---
+                if (!isnan(h)) {
+                    current_humidity = (int)h; // Save the value only if it's valid
+                }
+                lv_label_set_text(label_hum, (String(current_humidity) + " %").c_str());
+                // ------------------------------------------------
 
                 if (is_running) {
                     boxPID.Compute(); ledcWrite(PWM_CH_HEATER, pid_Output);

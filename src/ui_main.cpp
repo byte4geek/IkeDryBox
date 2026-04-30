@@ -137,41 +137,63 @@ void build_main_ui() {
     lv_obj_set_width(dd, 110);
     lv_obj_align(dd, LV_ALIGN_TOP_LEFT, 20, 90);
     lv_obj_add_event_cb(dd, dd_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
-
+    
+    // --- LABEL TARGET TEMP ---
     label_target = lv_label_create(main_screen);
     lv_label_set_text_fmt(label_target, "Target: %d C", (int)pid_Setpoint);
     lv_obj_set_style_text_color(label_target, lv_color_hex(0xFFFFFF), 0); 
     lv_obj_align(label_target, LV_ALIGN_TOP_RIGHT, -20, 80);
 
-    btn_tar_up = lv_btn_create(main_screen); lv_obj_set_size(btn_tar_up, 25, 25);
-    lv_obj_align_to(btn_tar_up, label_target, LV_ALIGN_OUT_LEFT_MID, -10, 0);
-    lv_obj_set_style_bg_color(btn_tar_up, lv_color_hex(0xFFFFFF), 0); lv_obj_set_style_text_color(btn_tar_up, lv_color_hex(0x000000), 0);
+    // --- BUTTON TEMPERATURE UP ---
+    btn_tar_up = lv_btn_create(main_screen); 
+    lv_obj_set_size(btn_tar_up, 25, 25);
+    lv_obj_align(btn_tar_up, LV_ALIGN_TOP_RIGHT, -120, 75); // Absolute alignment for the column
+    lv_obj_set_style_bg_color(btn_tar_up, lv_color_hex(0xFFFFFF), 0); 
+    lv_obj_set_style_text_color(btn_tar_up, lv_color_hex(0x000000), 0);
     lv_obj_add_event_cb(btn_tar_up, temp_adj_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *lbl_t_up = lv_label_create(btn_tar_up); lv_label_set_text(lbl_t_up, LV_SYMBOL_UP); lv_obj_center(lbl_t_up);
+    lv_obj_t *lbl_t_up = lv_label_create(btn_tar_up); 
+    lv_label_set_text(lbl_t_up, LV_SYMBOL_UP); 
+    lv_obj_center(lbl_t_up);
 
-    btn_tar_dn = lv_btn_create(main_screen); lv_obj_set_size(btn_tar_dn, 25, 25);
+    // --- BUTTON TEMPERATURE DOWN ---
+    btn_tar_dn = lv_btn_create(main_screen); 
+    lv_obj_set_size(btn_tar_dn, 25, 25);
     lv_obj_align_to(btn_tar_dn, btn_tar_up, LV_ALIGN_OUT_LEFT_MID, -5, 0);
-    lv_obj_set_style_bg_color(btn_tar_dn, lv_color_hex(0xFFFFFF), 0); lv_obj_set_style_text_color(btn_tar_dn, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_color(btn_tar_dn, lv_color_hex(0xFFFFFF), 0); 
+    lv_obj_set_style_text_color(btn_tar_dn, lv_color_hex(0x000000), 0);
     lv_obj_add_event_cb(btn_tar_dn, temp_adj_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *lbl_t_dn = lv_label_create(btn_tar_dn); lv_label_set_text(lbl_t_dn, LV_SYMBOL_DOWN); lv_obj_center(lbl_t_dn);
+    lv_obj_t *lbl_t_dn = lv_label_create(btn_tar_dn); 
+    lv_label_set_text(lbl_t_dn, LV_SYMBOL_DOWN); 
+    lv_obj_center(lbl_t_dn);
 
+    // --- LABEL TIMER ---
     label_timer = lv_label_create(main_screen);
     lv_obj_set_style_text_font(label_timer, &lv_font_montserrat_24, 0);
     lv_obj_set_style_text_color(label_timer, lv_color_hex(0xFFFFFF), 0); 
     lv_obj_align(label_timer, LV_ALIGN_TOP_RIGHT, -20, 115);
     update_timer_label();
 
-    btn_tim_up = lv_btn_create(main_screen); lv_obj_set_size(btn_tim_up, 25, 25);
-    lv_obj_align_to(btn_tim_up, label_timer, LV_ALIGN_OUT_LEFT_MID, -10, 0);
-    lv_obj_set_style_bg_color(btn_tim_up, lv_color_hex(0xFFFFFF), 0); lv_obj_set_style_text_color(btn_tim_up, lv_color_hex(0x000000), 0);
+    // --- BUTTON TIMER UP ---
+    btn_tim_up = lv_btn_create(main_screen); 
+    lv_obj_set_size(btn_tim_up, 25, 25);
+    lv_obj_align(btn_tim_up, LV_ALIGN_TOP_RIGHT, -120, 115); // Absolute alignment for the column
+    lv_obj_set_style_bg_color(btn_tim_up, lv_color_hex(0xFFFFFF), 0); 
+    lv_obj_set_style_text_color(btn_tim_up, lv_color_hex(0x000000), 0);
     lv_obj_add_event_cb(btn_tim_up, time_adj_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *lbl_tm_up = lv_label_create(btn_tim_up); lv_label_set_text(lbl_tm_up, LV_SYMBOL_UP); lv_obj_center(lbl_tm_up);
+    lv_obj_t *lbl_tm_up = lv_label_create(btn_tim_up); 
+    lv_label_set_text(lbl_tm_up, LV_SYMBOL_UP); 
+    lv_obj_center(lbl_tm_up);
 
-    btn_tim_dn = lv_btn_create(main_screen); lv_obj_set_size(btn_tim_dn, 25, 25);
+    // --- BUTTON TIMER DOWN ---
+    btn_tim_dn = lv_btn_create(main_screen); 
+    lv_obj_set_size(btn_tim_dn, 25, 25);
     lv_obj_align_to(btn_tim_dn, btn_tim_up, LV_ALIGN_OUT_LEFT_MID, -5, 0);
-    lv_obj_set_style_bg_color(btn_tim_dn, lv_color_hex(0xFFFFFF), 0); lv_obj_set_style_text_color(btn_tim_dn, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_color(btn_tim_dn, lv_color_hex(0xFFFFFF), 0); 
+    lv_obj_set_style_text_color(btn_tim_dn, lv_color_hex(0x000000), 0);
     lv_obj_add_event_cb(btn_tim_dn, time_adj_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *lbl_tm_dn = lv_label_create(btn_tim_dn); lv_label_set_text(lbl_tm_dn, LV_SYMBOL_DOWN); lv_obj_center(lbl_tm_dn);
+    lv_obj_t *lbl_tm_dn = lv_label_create(btn_tim_dn); 
+    lv_label_set_text(lbl_tm_dn, LV_SYMBOL_DOWN); 
+    lv_obj_center(lbl_tm_dn);
 
     lv_obj_t *icon_heater = lv_label_create(main_screen);
     lv_label_set_text(icon_heater, LV_SYMBOL_CHARGE " Heater:");

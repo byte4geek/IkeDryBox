@@ -334,7 +334,7 @@ void setup_web_server() {
     server.on("/api/status", HTTP_GET, []() {
         JsonDocument doc;
         doc["temp"] = pid_Input;
-        doc["hum"] = (int)sht31.readHumidity();
+        doc["hum"] = current_humidity; // <-- Read global variable for fix NaN
         doc["target"] = pid_Setpoint;
         doc["filament"] = current_filament; // added to sync UI
         

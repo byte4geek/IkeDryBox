@@ -237,7 +237,7 @@ void publish_data() {
     
     JsonDocument doc;
     doc["temp"] = pid_Input;
-    doc["hum"] = (int)sht31.readHumidity();
+    doc["hum"] = current_humidity; // <-- Read global variable fix for NaN
     doc["running"] = is_running;
     doc["filament"] = current_filament;
     doc["target"] = pid_Setpoint;
