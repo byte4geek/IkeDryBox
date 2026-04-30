@@ -21,7 +21,7 @@ void add_device_info(JsonObject& dev, String device_id) {
     dev["ids"] = device_id;
     dev["name"] = hostname; 
     dev["mf"] = "PeppeBytes"; 
-    dev["mdl"] = "v1.0";
+    dev["mdl"] = String("v") + FIRMWARE_VERSION; // Centralized firmware version fron globals.h
 }
 
 // --- THE STREAMING HELPER (Bypasses 256 byte limits!) ---
@@ -102,6 +102,7 @@ void send_ha_discovery() {
         doc["val_tpl"] = "{{ value_json.target }}";
         doc["cmd_t"] = cmd_base + "target";
         doc["unit_of_meas"] = "°C";
+        doc["icon"] = "mdi:thermometer"; // Thermometer icon on HA
         doc["min"] = 20;
         doc["max"] = 90;
         doc["step"] = 1;
