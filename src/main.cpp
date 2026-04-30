@@ -13,7 +13,7 @@
 Preferences prefs;
 
 double pid_Setpoint = 50.0, pid_Input, pid_Output;
-double Kp = 113.0, Ki = 0.80, Kd = 3.2; // The best numbers to start the tuning
+double Kp = 60.0, Ki = 0.90, Kd = 8.0; // The best numbers to start the tuning
 PID boxPID(&pid_Input, &pid_Output, &pid_Setpoint, Kp, Ki, Kd, DIRECT);
 
 String hostname = "IkeDryBox"; // default name
