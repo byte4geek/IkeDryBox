@@ -1,6 +1,7 @@
 # 📦 IkeDryBox - Smart 3D Filament Dryer
 
 IkeDryBox is an advanced, ESP32-based DIY smart filament dryer for 3D printing. Built with precision and efficiency in mind, it features a responsive LVGL touch interface, highly accurate PID temperature control, and seamless integration with Home Assistant via MQTT.
+![IkeDryBox dashboard](https://github.com/byte4geek/IkeDryBox/blob/main/images/main_ui.jpg)
 
 ## ✨ Features
 
