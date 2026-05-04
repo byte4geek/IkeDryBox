@@ -66,6 +66,7 @@ This project is built using **PlatformIO**. Make sure to install the following l
 5. Connect & Configure: Connect your phone/PC to this AP, wait for the captive portal, and enter your home WiFi credentials.
 
 6. WebUI Setup: Once connected to your home network, find the device IP address on the screen. Open a browser and navigate to http://<DEVICE_IP> to tune your PID settings (Kp, Ki, Kd) and enter your MQTT broker details.
+![WebUI](https://github.com/byte4geek/IkeDryBox/blob/main/images/WebUI.jpeg)
 
 ## 🧠 PID Tuning Tips
 The default PID values (Kp: 60.0, Ki: 0.6, Kd: 8.0) are tuned for a standard enclosed box with a fast-acting PTC heater. If you notice temperature instability:
@@ -76,6 +77,19 @@ The default PID values (Kp: 60.0, Ki: 0.6, Kd: 8.0) are tuned for a standard enc
 
 3. Oscillates continuously: Decrease Ki and Kp.
 
+
+## ⚠️ DANGER: HIGH VOLTAGE & SAFETY DISCLAIMER
+
+**WARNING: This project involves working with mains electricity (110V/220V AC) which is EXTREMELY DANGEROUS and can cause severe injury, fire, or DEATH if handled incorrectly.**
+
+By downloading, viewing, or attempting to replicate any part of this project, you fully acknowledge and agree to the following:
+
+1. **You Are Solely Responsible:** You attempt this project entirely at your own risk. The author(s) of this project, the repository owner, and anyone associated with its creation accept **ZERO RESPONSIBILITY or LIABILITY** for any injuries, deaths, property damage, fires, or any other negative consequences resulting from the use or misuse of the information, code, or 3D models provided here.
+2. **Required Knowledge:** This is NOT a beginner-level electronics project. Do not attempt to build this if you do not have a solid understanding of electrical safety, proper wiring techniques, grounding, and how to safely isolate high-voltage components from low-voltage microcontrollers.
+3. **No Guarantees:** This project is provided "as-is" for educational and informational purposes only. There are no warranties, expressed or implied, regarding its safety, reliability, or suitability for any specific purpose. The code and hardware design may contain bugs or flaws.
+4. **Thermal Hazards:** The PTC heater generates significant heat. Proper thermal insulation, airflow management, and the use of heat-resistant materials are mandatory to prevent melting or fire hazards. Never leave a DIY heating device running completely unattended without proper safety cutoffs (e.g., thermal fuses).
+
+**IF YOU DO NOT KNOW WHAT YOU ARE DOING, STOP NOW. Do not touch mains voltage. Ask a qualified electrician for help.**
 
 📄 License
 This project is open-source and available under the MIT License.
