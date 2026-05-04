@@ -19,7 +19,8 @@ IkeDryBox is an advanced, ESP32-based DIY smart filament dryer for 3D printing. 
 * **Sensor:** SHT31 (High precision Temperature & Humidity sensor via I2C). [SHT31 sensor](https://s.click.aliexpress.com/e/_c39bmlmr)
 * **Heater:** PTC heating with fan element controlled via high-power MOSFET. [PCT Heater + Fan](https://s.click.aliexpress.com/e/_c3vN8PiX)
 * **MOSFET** AOD4184 - 40V 50A. [Mosfet board](https://s.click.aliexpress.com/e/_c3yDwbWf)
-*  **Temperature Switch Thermostat** 85°C 10A Ceramic Hole-NC [Thermal Protection switch](https://s.click.aliexpress.com/e/_c3eNqQKF)
+* **Temperature Switch Thermostat** 85°C 10A Ceramic Hole-NC [Thermal Protection switch](https://s.click.aliexpress.com/e/_c3eNqQKF)
+* **Power supply 12V 10A 120W [Power supply](https://s.click.aliexpress.com/e/_c3uwulYb)
 
 ## 📌 Pinout Configuration
 
