@@ -5,16 +5,16 @@ IkeDryBox is an advanced, ESP32-based DIY smart filament dryer for 3D printing. 
 ## ✨ Features
 
 * **🌡️ Precision PID Control:** Custom-tuned Proportional-Integral-Derivative (PID) algorithm to maintain the exact target temperature without fluctuations.
-* **📱 Touchscreen UI:** Beautiful and responsive graphical interface built with LVGL on a 2.4" TFT Display (CYD - Cheap Yellow Display).
+* **📱 Touchscreen UI:** Beautiful and responsive graphical interface built with LVGL on a 2.4" TFT Display (CYD - Cheap Yellow Display fron TZT electronics).
 * **🖥️ WebUI Configuration:** Built-in web server to tune PID parameters, configure network settings, and set MQTT credentials on the fly without reflashing.
 * **🏠 Home Assistant Integration:** Full MQTT support with Auto-Discovery. Monitor temperature, humidity, remaining time, and control the dryer directly from your smart home dashboard.
 * **🤫 Silent PWM Fan Control:** Hardware-specific low-frequency PWM tuning (100Hz) to eliminate coil whine and keep the fan whisper-quiet.
 * **🛡️ Smart Screen Saver:** Auto-dimming "Touch Shield" that turns the screen completely black after 10 minutes of inactivity, protecting the display and preventing phantom touches.
-* **💡 RGB Status LED:** Visual feedback for heating status (pulsing red) and standby mode (dimmed green) using a common-anode RGB LED.
+* **💡 RGB Status LED:** Visual feedback for heating status (pulsing red) and standby mode (dimmed green) using a common-anode of the builtin RGB LED.
 
 ## 🛠️ Hardware Requirements
 
-* **Microcontroller:** ESP32-2432S028R (2.4" Cheap Yellow Display with resistive touch) or similar ESP32 board with TFT. https://s.click.aliexpress.com/e/_c3amTO8B
+* **Microcontroller:** ESP32 with builtin LCD color display (ST7789 2.4" Cheap Yellow Display with resistive touch and builtin RGB led mounted on front of the board) or similar ESP32 board with TFT. https://s.click.aliexpress.com/e/_c3amTO8B more description and documentation regarding this board are available here https://www.tztstore.com/goods/show-7983.html
 * **Sensor:** SHT31 (High precision Temperature & Humidity sensor via I2C). https://s.click.aliexpress.com/e/_c39bmlmr
 * **Heater:** PTC heating with fan element controlled via high-power MOSFET. [https://s.click.aliexpress.com/e/_c3vN8PiX](https://s.click.aliexpress.com/e/_c3vN8PiX)
 * **MOSFET** AOD4184 - 40V 50A. https://s.click.aliexpress.com/e/_c3yDwbWf
