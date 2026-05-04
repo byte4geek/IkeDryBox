@@ -15,11 +15,11 @@ IkeDryBox is an advanced, ESP32-based DIY smart filament dryer for 3D printing. 
 
 ## 🛠️ Hardware Requirements
 
-* **Microcontroller:** ESP32 with builtin LCD color display (ST7789 2.4" Cheap Yellow Display with resistive touch and builtin RGB led mounted on front of the board) or similar ESP32 board with TFT. https://it.aliexpress.com/item/1005008212152877.html more description and documentations regarding this board are available here https://www.tztstore.com/goods/show-7983.html
-* **Sensor:** SHT31 (High precision Temperature & Humidity sensor via I2C). https://s.click.aliexpress.com/e/_c39bmlmr
-* **Heater:** PTC heating with fan element controlled via high-power MOSFET. [https://s.click.aliexpress.com/e/_c3vN8PiX](https://s.click.aliexpress.com/e/_c3vN8PiX)
-* **MOSFET** AOD4184 - 40V 50A. https://s.click.aliexpress.com/e/_c3yDwbWf
-*  **Temperature Switch Thermostat** 85°C 10A Ceramic Hole-NC https://s.click.aliexpress.com/e/_c3eNqQKF
+* **Microcontroller:** ESP32 with builtin LCD color display (ST7789 2.4" Cheap Yellow Display with resistive touch and builtin RGB led mounted on front of the board) or similar ESP32 board with TFT. [LCD Board](https://it.aliexpress.com/item/1005008212152877.html) more description and documentations regarding this board are available here [Board Documentations](https://www.tztstore.com/goods/show-7983.html)
+* **Sensor:** SHT31 (High precision Temperature & Humidity sensor via I2C). [SHT31 sensor](https://s.click.aliexpress.com/e/_c39bmlmr)
+* **Heater:** PTC heating with fan element controlled via high-power MOSFET. [PCT Heater + Fan](https://s.click.aliexpress.com/e/_c3vN8PiX)
+* **MOSFET** AOD4184 - 40V 50A. [Mosfet board](https://s.click.aliexpress.com/e/_c3yDwbWf)
+*  **Temperature Switch Thermostat** 85°C 10A Ceramic Hole-NC [Thermal Protection switch](https://s.click.aliexpress.com/e/_c3eNqQKF)
 
 ## 📌 Pinout Configuration
 
