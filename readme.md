@@ -14,7 +14,7 @@ IkeDryBox is an advanced, ESP32-based DIY smart filament dryer for 3D printing. 
 
 ## 🛠️ Hardware Requirements
 
-* **Microcontroller:** ESP32 with builtin LCD color display (ST7789 2.4" Cheap Yellow Display with resistive touch and builtin RGB led mounted on front of the board) or similar ESP32 board with TFT. https://s.click.aliexpress.com/e/_c3amTO8B more description and documentation regarding this board are available here https://www.tztstore.com/goods/show-7983.html
+* **Microcontroller:** ESP32 with builtin LCD color display (ST7789 2.4" Cheap Yellow Display with resistive touch and builtin RGB led mounted on front of the board) or similar ESP32 board with TFT. https://it.aliexpress.com/item/1005008212152877.html more description and documentations regarding this board are available here https://www.tztstore.com/goods/show-7983.html
 * **Sensor:** SHT31 (High precision Temperature & Humidity sensor via I2C). https://s.click.aliexpress.com/e/_c39bmlmr
 * **Heater:** PTC heating with fan element controlled via high-power MOSFET. [https://s.click.aliexpress.com/e/_c3vN8PiX](https://s.click.aliexpress.com/e/_c3vN8PiX)
 * **MOSFET** AOD4184 - 40V 50A. https://s.click.aliexpress.com/e/_c3yDwbWf
@@ -78,3 +78,8 @@ The default PID values (Kp: 60.0, Ki: 0.6, Kd: 8.0) are tuned for a standard enc
 
 📄 License
 This project is open-source and available under the MIT License.
+
+# Donation
+Buy me a coffee
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VK4CSX9NVQAZU)
