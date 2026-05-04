@@ -21,6 +21,7 @@ IkeDryBox is an advanced, ESP32-based DIY smart filament dryer for 3D printing. 
 * **MOSFET** AOD4184 - 40V 50A. [Mosfet board](https://s.click.aliexpress.com/e/_c3yDwbWf)
 * **Temperature Switch Thermostat** 85°C 10A Ceramic Hole-NC [Thermal Protection switch](https://s.click.aliexpress.com/e/_c3eNqQKF)
 * **Power supply 12V 10A 120W** [Power supply](https://s.click.aliexpress.com/e/_c3uwulYb)
+* **Printables parts to assemble the project** [Printables parts](https://makerworld.com/it/models/2755143-ikedrybox-smart-active-drybox-ikea-samla-22l)
 
 ## 📌 Pinout Configuration
 
