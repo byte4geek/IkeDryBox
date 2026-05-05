@@ -9,7 +9,7 @@
 #include <PubSubClient.h>
 
 // --- Firmware Version ---
-#define FIRMWARE_VERSION "1.0.3"
+#define FIRMWARE_VERSION "1.0.4-rc1"
 
 // --- PIN and HARDWARE ---
 #define PIN_HEATER 5
@@ -28,6 +28,16 @@
 // Led RGB
 #define LED_R 4
 #define LED_B 17
+
+// --- FILAMENT PROFILE TEMPs/TIMEs
+#define TEMP_PLA  50.0
+#define TEMP_PETG 65.0
+#define TEMP_ABS  70.0
+#define TEMP_TPU  55.0
+#define TIME_PLA  18000 // 5h
+#define TIME_PETG 21600 // 6h
+#define TIME_ABS 21600 // 6h
+#define TIME_TPU 28800 // 8h
 
 // --- GLOBAL INSTANCES ---
 extern Preferences prefs;
@@ -70,6 +80,7 @@ extern lv_obj_t *label_timer;
 extern lv_obj_t *label_target;
 extern lv_obj_t *ta_ip, *ta_gw, *ta_nm; // Network
 extern lv_obj_t *ta_mqtt_host, *ta_mqtt_port, *ta_mqtt_user, *ta_mqtt_pass; // MQTT
+extern String current_status;
 
 extern WiFiClient espClient;
 extern PubSubClient mqttClient;

@@ -18,6 +18,7 @@ double Kp = 60.0, Ki = 0.90, Kd = 8.0; // The best numbers to start the tuning
 PID boxPID(&pid_Input, &pid_Output, &pid_Setpoint, Kp, Ki, Kd, DIRECT);
 
 String hostname = "IkeDryBox"; // default name
+String current_status = "Ready"; // For MQTT
 lv_obj_t *ta_hostname;
 
 bool is_running = false;
@@ -256,6 +257,7 @@ void loop() {
             if (remaining_seconds > 0) remaining_seconds--;
             else {
                 is_running = false;
+                current_status = "Done"; // added this for mqtt status
                 ledcWrite(PWM_CH_HEATER, 0); ledcWrite(PWM_CH_FAN, 0);
                 lv_label_set_text(label_btn_start, "START"); lv_obj_set_style_bg_color(btn_start, lv_color_hex(0x00AA00), 0);
                 lv_label_set_text(label_status, "Status: DONE!"); lv_obj_set_style_text_color(label_status, lv_color_hex(0x00FF00), 0);

@@ -44,12 +44,11 @@ void dd_event_cb(lv_event_t *e) {
     
     current_filament = buf; // Sync for MQTT and WebUI
 
-    if (strcmp(buf, "PLA") == 0) { remaining_seconds = 5 * 3600; pid_Setpoint = 50.0; }
-    else if (strcmp(buf, "PETG") == 0) { remaining_seconds = 6 * 3600; pid_Setpoint = 65.0; }
-    else if (strcmp(buf, "ABS") == 0) { remaining_seconds = 6 * 3600; pid_Setpoint = 80.0; }
-    else if (strcmp(buf, "TPU") == 0) { remaining_seconds = 8 * 3600; pid_Setpoint = 55.0; }
-    // else if (strcmp(buf, "Custom") == 0) { remaining_seconds = custom_time; pid_Setpoint = custom_temp; }
-    else if (strcmp(buf, "Custom") == 0) { remaining_seconds = custom_time; pid_Setpoint = custom_temp; } // <-- 10 SECONDs for debug
+    if (strcmp(buf, "PLA") == 0) { remaining_seconds = TIME_PLA; pid_Setpoint = TEMP_PLA; }
+    else if (strcmp(buf, "PETG") == 0) { remaining_seconds = TIME_PETG; pid_Setpoint = TEMP_PETG; }
+    else if (strcmp(buf, "ABS") == 0) { remaining_seconds = TIME_ABS; pid_Setpoint = TEMP_ABS; } // set max 70 for sceurity on the ikea box
+    else if (strcmp(buf, "TPU") == 0) { remaining_seconds = TIME_TPU; pid_Setpoint = TEMP_TPU; }
+    else if (strcmp(buf, "Custom") == 0) { remaining_seconds = custom_time; pid_Setpoint = custom_temp; }
 
     lv_label_set_text_fmt(label_target, "Target: %d C", (int)pid_Setpoint);
     if (!is_running) update_timer_label();
@@ -62,10 +61,10 @@ void btn_start_event_cb(lv_event_t *e) {
         if (remaining_seconds <= 0) {
             current_filament.trim(); 
             
-            if (current_filament == "PLA") remaining_seconds = 5 * 3600;
-            else if (current_filament == "PETG") remaining_seconds = 6 * 3600;
-            else if (current_filament == "ABS") remaining_seconds = 6 * 3600;
-            else if (current_filament == "TPU") remaining_seconds = 8 * 3600;
+            if (current_filament == "PLA") remaining_seconds = TIME_PLA;
+            else if (current_filament == "PETG") remaining_seconds = TIME_PETG;
+            else if (current_filament == "ABS") remaining_seconds = TIME_ABS;
+            else if (current_filament == "TPU") remaining_seconds = TIME_TPU;
             else if (current_filament == "Custom") remaining_seconds = custom_time;
             else remaining_seconds = 5 * 3600; // Emergency Fallback
             

@@ -404,10 +404,10 @@ void setup_web_server() {
     server.on("/api/set_filament", HTTP_POST, []() {
         if (server.hasArg("val")) {
             current_filament = server.arg("val");
-            if (current_filament == "PLA")  { remaining_seconds = 5 * 3600; pid_Setpoint = 50; }
-            if (current_filament == "PETG") { remaining_seconds = 6 * 3600; pid_Setpoint = 65; }
-            if (current_filament == "ABS")  { remaining_seconds = 6 * 3600; pid_Setpoint = 80; }
-            if (current_filament == "TPU")  { remaining_seconds = 8 * 3600; pid_Setpoint = 55; }
+            if (current_filament == "PLA")  { remaining_seconds = TIME_PLA; pid_Setpoint = TEMP_PLA; }
+            if (current_filament == "PETG") { remaining_seconds = TIME_PETG; pid_Setpoint = TEMP_PETG; }
+            if (current_filament == "ABS")  { remaining_seconds = TIME_ABS; pid_Setpoint = TEMP_ABS; }
+            if (current_filament == "TPU")  { remaining_seconds = TIME_TPU; pid_Setpoint = TEMP_TPU; }
             // if (current_filament == "Custom") { remaining_seconds = custom_time; pid_Setpoint = custom_temp; }
             if (current_filament == "Custom") { remaining_seconds = custom_time; pid_Setpoint = custom_temp; } // <-- 10 SECONDs for debug
             

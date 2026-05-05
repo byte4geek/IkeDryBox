@@ -113,18 +113,26 @@ void send_ha_discovery() {
         publish_discovery_packet(base + "number/" + dev_id + "/target/config", out);
     }
 
-    // 5. Filament Sensor
+    // 5. Filament Select (It replace the older readonly sensor)
     {
          JsonDocument doc;
          doc["name"] = "Filament";
          doc["stat_t"] = stat_t;
+         doc["cmd_t"] = cmd_base + "filament"; // Riceve i comandi da HA
          doc["val_tpl"] = "{{ value_json.filament }}";
-         doc["icon"] = "mdi:movie-roll"; // Puts the movie-roll icon on HA!
-         doc["uniq_id"] = dev_id + "_fil";
+         doc["icon"] = "mdi:movie-roll";
+         JsonArray options = doc["options"].to<JsonArray>();
+         options.add("PLA");
+         options.add("PETG");
+         options.add("ABS");
+         options.add("TPU");
+         // options.add("Nylon"); //not safe for Ikea box
+         options.add("Custom");
+         doc["uniq_id"] = dev_id + "_fil_select"; 
          JsonObject dev = doc["dev"].to<JsonObject>();
          add_device_info(dev, dev_id);
          String out; serializeJson(doc, out);
-         publish_discovery_packet(base + "sensor/" + dev_id + "/filament/config", out);
+         publish_discovery_packet(base + "select/" + dev_id + "/filament/config", out);
     }
 
     // 6. Sensor Timer (Time Remaining)
@@ -139,6 +147,50 @@ void send_ha_discovery() {
          add_device_info(dev, dev_id);
          String out; serializeJson(doc, out);
          publish_discovery_packet(base + "sensor/" + dev_id + "/timer/config", out);
+    }
+
+    // 7. Sensor Heater Power %
+    {
+         JsonDocument doc;
+         doc["name"] = "Heater Power";
+         doc["stat_t"] = stat_t;
+         doc["unit_of_meas"] = "%";
+         doc["val_tpl"] = "{{ value_json.heater }}";
+         doc["icon"] = "mdi:heating-coil";
+         doc["uniq_id"] = dev_id + "_heater";
+         JsonObject dev = doc["dev"].to<JsonObject>();
+         add_device_info(dev, dev_id);
+         String out; serializeJson(doc, out);
+         publish_discovery_packet(base + "sensor/" + dev_id + "/heater/config", out);
+    }
+
+    // 8. Sensor Fan Speed %
+    {
+         JsonDocument doc;
+         doc["name"] = "Fan Speed";
+         doc["stat_t"] = stat_t;
+         doc["unit_of_meas"] = "%";
+         doc["val_tpl"] = "{{ value_json.fan }}";
+         doc["icon"] = "mdi:fan";
+         doc["uniq_id"] = dev_id + "_fan";
+         JsonObject dev = doc["dev"].to<JsonObject>();
+         add_device_info(dev, dev_id);
+         String out; serializeJson(doc, out);
+         publish_discovery_packet(base + "sensor/" + dev_id + "/fan/config", out);
+    }
+
+    // 9. Sensor Status (Ready/Drying/Done)
+    {
+         JsonDocument doc;
+         doc["name"] = "Status";
+         doc["stat_t"] = stat_t;
+         doc["val_tpl"] = "{{ value_json.status }}";
+         doc["icon"] = "mdi:information-outline";
+         doc["uniq_id"] = dev_id + "_status";
+         JsonObject dev = doc["dev"].to<JsonObject>();
+         add_device_info(dev, dev_id);
+         String out; serializeJson(doc, out);
+         publish_discovery_packet(base + "sensor/" + dev_id + "/status/config", out);
     }
 
     Serial.println("--- ENDS SEND AUTO-DISCOVERY HA ---\n");
@@ -156,10 +208,12 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         if (turn_on != is_running) {
             is_running = turn_on;
             if(is_running) {
+                current_status = "Drying"; // <-- State update
                 lv_label_set_text(label_btn_start, "STOP");
                 lv_obj_set_style_bg_color(btn_start, lv_color_hex(0xCC0000), 0);
                 ledcWrite(PWM_CH_FAN, 255);
             } else {
+                current_status = "Ready"; // <-- State update
                 lv_label_set_text(label_btn_start, "START");
                 lv_obj_set_style_bg_color(btn_start, lv_color_hex(0x00AA00), 0);
                 ledcWrite(PWM_CH_HEATER, 0); ledcWrite(PWM_CH_FAN, 0);
@@ -174,6 +228,42 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
             lv_label_set_text_fmt(label_target, "Target: %d C", (int)pid_Setpoint);
             publish_data(); 
         }
+    }
+    else if (t == (dev_id + "/cmd/filament")) {
+        // Receiving the command from the HA drop-down menu
+        current_filament = msg;
+
+        // --- START NEW LOGIC: Associate temperature AND timer ---
+        if (msg == "PLA") {
+            pid_Setpoint = TEMP_PLA;
+            remaining_seconds = TIME_PLA;
+        }
+        else if (msg == "PETG") {
+            pid_Setpoint = TEMP_PETG;
+            remaining_seconds = TIME_PETG;
+        }
+        else if (msg == "ABS") {
+            pid_Setpoint = TEMP_ABS;
+            remaining_seconds = TIME_ABS;
+        }
+        else if (msg == "TPU") {
+            pid_Setpoint = TEMP_TPU;
+            remaining_seconds = TIME_TPU;
+        }
+        else if (msg == "Custom") {
+            pid_Setpoint = custom_temp;
+            remaining_seconds = custom_time; 
+        }
+        
+        // Update the temperature on the physical LCD display
+        lv_label_set_text_fmt(label_target, "Target: %d C", (int)pid_Setpoint);
+        
+        // Force the timer to update graphically on the display
+        update_timer_label();
+        // --- ENDS NEW LOGIC ---
+
+        // Publish the data (Home Assistant will now receive the new target and timer!)
+        publish_data();
     }
 }
 
@@ -241,6 +331,17 @@ void publish_data() {
     doc["running"] = is_running;
     doc["filament"] = current_filament;
     doc["target"] = pid_Setpoint;
+    // send the status into JSON
+    // --- CALCULATING STATE ---
+    if (is_running) {
+        current_status = "Drying";
+    } else if (remaining_seconds <= 0) {
+        current_status = "Done";
+    } else {
+        current_status = "Ready";
+    }
+    doc["status"] = current_status;
+    // ---------
 
     // --- ADDED TIMER FOR MQTT ---
     int h = remaining_seconds / 3600;
