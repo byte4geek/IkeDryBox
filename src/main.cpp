@@ -284,7 +284,7 @@ void loop() {
 
                 if (is_running) {
                     boxPID.Compute(); ledcWrite(PWM_CH_HEATER, pid_Output);
-                    int fan_pwm = map(pid_Output, 0, 255, 75, 180);
+                    int fan_pwm = map(pid_Output, 0, 255, 75, 255);
                     ledcWrite(PWM_CH_FAN, fan_pwm);
                     int heater_pct = (pid_Output / 255.0) * 100; lv_label_set_text_fmt(label_heater_per, "%d%%", heater_pct);
                     int fan_pct = (fan_pwm / 255.0) * 100; lv_label_set_text_fmt(label_fan_per, "%d%%", fan_pct);
