@@ -48,10 +48,53 @@ class LGFX : public lgfx::LGFX_Device {
     lgfx::Touch_XPT2046 _touch_instance;
 public:
     LGFX(void) {
-        { auto cfg = _bus_instance.config(); cfg.spi_host = SPI2_HOST; cfg.spi_mode = 0; cfg.freq_write = 40000000; cfg.pin_sclk = 14; cfg.pin_mosi = 13; cfg.pin_miso = 12; cfg.pin_dc = 2; cfg.dma_channel = 0; _bus_instance.config(cfg); _panel_instance.setBus(&_bus_instance); }
-        { auto cfg = _panel_instance.config(); cfg.pin_cs = 15; cfg.pin_rst = -1; cfg.pin_busy = -1; cfg.memory_width = 320; cfg.memory_height = 240; cfg.panel_width = 320; cfg.panel_height = 240; cfg.offset_rotation = 4; cfg.rgb_order = true; _panel_instance.config(cfg); }
-        { auto cfg = _light_instance.config(); cfg.pin_bl = 27; cfg.freq = 44100; cfg.pwm_channel = 7; _light_instance.config(cfg); _panel_instance.setLight(&_light_instance); }
-        { auto cfg = _touch_instance.config(); cfg.x_min = 222; cfg.x_max = 3367; cfg.y_min = 192; cfg.y_max = 3732; cfg.bus_shared = true; cfg.spi_host = SPI2_HOST; cfg.pin_cs = 33; _touch_instance.config(cfg); _panel_instance.setTouch(&_touch_instance); }
+        { 
+            auto cfg = _bus_instance.config();
+            cfg.spi_host = SPI2_HOST;
+            cfg.spi_mode = 0;
+            cfg.freq_write = 40000000;
+            cfg.pin_sclk = 14;
+            cfg.pin_mosi = 13;
+            cfg.pin_miso = 12;
+            cfg.pin_dc = 2;
+            cfg.dma_channel = 0;
+            _bus_instance.config(cfg);
+            _panel_instance.setBus(&_bus_instance);
+        }
+        { 
+            auto cfg = _panel_instance.config();
+            cfg.pin_cs = 15;
+            cfg.pin_rst = -1;
+            cfg.pin_busy = -1;
+            cfg.memory_width = 320;
+            cfg.memory_height = 240;
+            cfg.panel_width = 320;
+            cfg.panel_height = 240;
+            cfg.offset_rotation = 4;
+            cfg.rgb_order = true;
+            _panel_instance.config(cfg);
+        }
+        { 
+            auto cfg = _light_instance.config();
+            cfg.pin_bl      = 27;
+            cfg.invert      = false;
+            cfg.freq        = 44100;
+            cfg.pwm_channel = 7;
+            _light_instance.config(cfg);
+            _panel_instance.setLight(&_light_instance);
+        }
+        { 
+            auto cfg = _touch_instance.config();
+            cfg.x_min = 222;
+            cfg.x_max = 3367;
+            cfg.y_min = 192;
+            cfg.y_max = 3732;
+            cfg.bus_shared = true;
+            cfg.spi_host = SPI2_HOST;
+            cfg.pin_cs = 33;
+            _touch_instance.config(cfg);
+            _panel_instance.setTouch(&_touch_instance);
+        }
         setPanel(&_panel_instance);
     }
 };
@@ -68,12 +111,25 @@ static lv_color_t buf[screenWidth * 15];
 void shield_event_cb(lv_event_t * e) {
     // When you tap on the black screen, it does this:
     screen_is_off = false;
-    // digitalWrite(BACKLIGHT_PIN, HIGH); // Turn on the light (not working)
+    
+    lv_disp_trig_activity(NULL); // <-- THE COMMAND TO RESET THE TIMER
+    Serial.println(">>> SHIELD TOUCHED: SCREEN WOKEN UP <<<");
+    
+    // 1. Remove the black shield immediately
     lv_obj_add_flag(touch_shield, LV_OBJ_FLAG_HIDDEN); // Hides the black shield
     
-    lv_disp_trig_activity(NULL); // <-- THE CORRECT COMMAND TO RESET THE TIMER
-    
-    Serial.println(">>> SHIELD TOUCHED: SCREEN WOKEN UP <<<");
+    // 2. Force LVGL to redraw the UI before the fade
+    lv_tick_inc(5);
+    lv_timer_handler();  
+
+    // --- GRADUAL FADE IN 1 SECONDS ---
+    for (int b = 0; b <= 180; b++) {
+        tft.setBrightness(b);
+        lv_tick_inc(5);
+        lv_timer_handler();
+        delay(5); // 180 step * 5ms = ~900ms ≈ 1 sec
+    }
+    // -------------------------------------
 }
 
 void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p) {
@@ -123,8 +179,8 @@ void setup() {
     pinMode(17, OUTPUT); digitalWrite(17, HIGH);
     pinMode(4, OUTPUT);  digitalWrite(4, HIGH);
     
-    pinMode(BACKLIGHT_PIN, OUTPUT);
-    digitalWrite(BACKLIGHT_PIN, LOW); // Turn on screen
+    // pinMode(BACKLIGHT_PIN, OUTPUT);
+    // digitalWrite(BACKLIGHT_PIN, LOW); // Turn on screen
 
     load_settings();
     
@@ -202,18 +258,28 @@ void loop() {
     lv_timer_handler();
     delay(5);
     
-    // --- Managing Black screen ---
+    // --- Managing Black screen/back light ---
     if (auto_screen_off) {
-        if (lv_disp_get_inactive_time(NULL) > 6000000) { // 10 minutes
+        if (lv_disp_get_inactive_time(NULL) > 600000) { // 10 minutes 600000ms / 10 sec 10000ms
             if (!screen_is_off) {
                 Serial.println(">>> TIME OUT: BLACK SHIELD ACTIVATED <<<");
-                // digitalWrite(BACKLIGHT_PIN, HIGH); // Turn off bacl light (not working)
+
+                // --- GRADUAL FADE OUT IN 3 SECONDS ---
+                // 180 steps of 1, each step = 3000ms / 180 = ~16ms
+                for (int b = 180; b >= 0; b--) {
+                    tft.setBrightness(b);
+                    lv_tick_inc(16);
+                    lv_timer_handler();
+                    delay(16);
+                }
+                // ---------------------------------------
+
                 if (touch_shield != NULL) lv_obj_clear_flag(touch_shield, LV_OBJ_FLAG_HIDDEN); // Show black
                 screen_is_off = true;
             }
         }
     } else if (screen_is_off) {
-        // digitalWrite(BACKLIGHT_PIN, LOW);
+        tft.setBrightness(180); // turn on the light
         if (touch_shield != NULL) lv_obj_add_flag(touch_shield, LV_OBJ_FLAG_HIDDEN);
         screen_is_off = false;
     }
