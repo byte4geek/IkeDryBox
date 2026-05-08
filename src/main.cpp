@@ -267,7 +267,7 @@ void loop() {
         // We convert minutes to milliseconds (1 min = 60,000 ms) 
         uint32_t timeout_ms = (uint32_t)screen_timeout_mins * 60000; 
         
-        if (lv_disp_get_inactive_time(NULL) > timeout_ms) { // managed by webui default 10 mins sobstitute variable with number (10000) to test it
+        if (lv_disp_get_inactive_time(NULL) > timeout_ms) { // managed by webui default 10 mins substitute variable with number (10000) to test it
             if (!screen_is_off) {
                 Serial.println(">>> TIME OUT: BLACK SHIELD ACTIVATED <<<");
 
