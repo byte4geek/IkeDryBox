@@ -121,7 +121,7 @@ const char index_html[] PROGMEM = R"rawliteral(
             <div class="input-group"><label>Kd:</label><input type="number" step="0.1" id="kd"></div>
             
             <h3 style="color:#00BFFF">System, Network & MQTT</h3>
-            <div class="input-group"><label>Auto Screen Off (10m):</label><input type="checkbox" id="scr_off" style="width:20px; height:20px;"></div>
+            <div class="input-group"><label>Screen Timeout (min, 0=off):</label><input type="number" id="scr_to" min="0" step="1"></div>
             <div class="input-group"><label>Hostname:</label><input type="text" id="hostname"></div>
             <div class="input-group"><label>Use DHCP:</label><input type="checkbox" id="dhcp" onchange="toggleDhcp(this.checked)" style="width:20px; height:20px;"></div>
             <div class="input-group"><label>Static IP:</label><input type="text" id="ip"></div>
@@ -220,7 +220,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                     document.getElementById('m_port').value = c.m_port;
                     document.getElementById('m_user').value = c.m_user;
                     document.getElementById('m_pass').value = c.m_pass;
-                    document.getElementById('scr_off').checked = c.scr_off;
+                    document.getElementById('scr_to').value = c.scr_to; // Update input field with minutes
                     toggleDhcp(c.dhcp);
                 });
             }
@@ -261,7 +261,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 
         function saveConfig() {
             let data = {
-                scr_off: document.getElementById('scr_off').checked,
+                scr_to: parseInt(document.getElementById('scr_to').value) || 0, // Parse minutes from input
                 c_temp: parseFloat(document.getElementById('c_temp').value),
                 c_time_h: parseInt(document.getElementById('c_time_h').value) || 0,
                 c_time_m: parseInt(document.getElementById('c_time_m').value) || 0,
@@ -463,7 +463,7 @@ void setup_web_server() {
         doc["m_port"] = prefs.getString("m_port", "1883");
         doc["m_user"] = prefs.getString("m_user", "");
         doc["m_pass"] = prefs.getString("m_pass", "");
-        doc["scr_off"] = auto_screen_off;
+        doc["scr_to"] = screen_timeout_mins; // Pass the timeout value in minutes to WebUI
         prefs.end();
         
         String res; serializeJson(doc, res);
@@ -513,8 +513,15 @@ void setup_web_server() {
                 prefs.putString("m_pass", doc["m_pass"] | "");
                 
                 // Save Screen Off
-                auto_screen_off = doc["scr_off"] | false;
+                // --- NEW SCREEN TIMEOUT LOGIC ---
+                // If not provided, fallback to the default set in globals.h
+                screen_timeout_mins = doc["scr_to"] | DEFAULT_SCREEN_TIMEOUT;
+                prefs.putInt("scr_to", screen_timeout_mins);
+
+                // If minutes are greater than 0, automatically enable auto-screen-off
+                auto_screen_off = (screen_timeout_mins > 0);
                 prefs.putBool("scr_off", auto_screen_off);
+                // ------------------------------------
                 
                 prefs.end();
             }

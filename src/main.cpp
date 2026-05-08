@@ -27,6 +27,8 @@ long remaining_seconds = 5 * 3600;
 bool use_dhcp = true; 
 lv_obj_t *cb_dhcp;
 
+int screen_timeout_mins = DEFAULT_SCREEN_TIMEOUT;
+
 lv_obj_t *main_screen;
 lv_obj_t *settings_screen;
 lv_obj_t *label_heater_per, *label_fan_per;
@@ -157,6 +159,7 @@ void load_settings() {
     use_dhcp = prefs.getBool("dhcp", true);
     custom_temp = prefs.getFloat("c_temp", 50.0);
     custom_time = prefs.getLong("c_time", 18000);
+    screen_timeout_mins = prefs.getInt("scr_to", DEFAULT_SCREEN_TIMEOUT);
     auto_screen_off = prefs.getBool("scr_off", false);
 
     // If the IP is static, we configure WiFi
@@ -259,8 +262,12 @@ void loop() {
     delay(5);
     
     // --- Managing Black screen/back light ---
-    if (auto_screen_off) {
-        if (lv_disp_get_inactive_time(NULL) > 600000) { // 10 minutes 600000ms / 10 sec 10000ms
+    if (auto_screen_off && screen_timeout_mins > 0) { // If enabled and timeout > 0
+        
+        // We convert minutes to milliseconds (1 min = 60,000 ms) 
+        uint32_t timeout_ms = (uint32_t)screen_timeout_mins * 60000; 
+        
+        if (lv_disp_get_inactive_time(NULL) > timeout_ms) { // managed by webui default 10 mins sobstitute variable with number (10000) to test it
             if (!screen_is_off) {
                 Serial.println(">>> TIME OUT: BLACK SHIELD ACTIVATED <<<");
 
@@ -278,7 +285,9 @@ void loop() {
                 screen_is_off = true;
             }
         }
-    } else if (screen_is_off) {
+    } else if (screen_is_off || !auto_screen_off) {
+        // If the screen saver was active but has been disabled by settings 
+        // or if screen_timeout_mins has become 0, we turn the light back to maximum 
         tft.setBrightness(180); // turn on the light
         if (touch_shield != NULL) lv_obj_add_flag(touch_shield, LV_OBJ_FLAG_HIDDEN);
         screen_is_off = false;

@@ -24,6 +24,7 @@
 // Display backlight PIN
 #define BACKLIGHT_PIN 27
 #define PWM_CH_BACKLIGHT 2
+#define DEFAULT_SCREEN_TIMEOUT 10  // 10 minutes default
 
 // Led RGB
 #define LED_R 4
@@ -67,6 +68,7 @@ extern lv_obj_t *cb_dhcp; // The checkbox for the display
 // --- Screen and UI shared objects ---
 extern lv_obj_t *main_screen;
 extern lv_obj_t *settings_screen;
+extern int screen_timeout_mins;    // screen Timeout in minutes
 
 // Objects that main.cpp must update (Sensors, timers, etc.)
 extern lv_obj_t *label_temp; // temperature
