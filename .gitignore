@@ -5,3 +5,5 @@
 .vscode/ipch
 Thumbs.db
 thumbs.db
+RELEASE*
+*.bin

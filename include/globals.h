@@ -9,7 +9,7 @@
 #include <PubSubClient.h>
 
 // --- Firmware Version ---
-#define FIRMWARE_VERSION "1.0.5"
+#define FIRMWARE_VERSION "1.0.7b"
 
 // --- PIN and HARDWARE ---
 #define PIN_HEATER 5
@@ -98,6 +98,10 @@ extern lv_obj_t *slider_c_time_m; // <-- New: Minutes Slider
 extern lv_obj_t *lbl_val_c_temp;
 extern lv_obj_t *lbl_val_c_time;
 extern lv_obj_t *lbl_val_c_time_m; // <-- New: Minutes Label
+
+// --- LED intensity (0 = max, 255 = off) ---
+extern int led_r_intensity;
+extern int led_g_intensity;
 
 // --- Backlight ---
 extern bool auto_screen_off;

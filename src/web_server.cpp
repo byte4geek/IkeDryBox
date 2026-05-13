@@ -43,6 +43,7 @@ const char index_html[] PROGMEM = R"rawliteral(
         .info-table td { padding: 8px 4px; border-bottom: 1px solid #333; }
         .info-table td:first-child { font-weight: bold; color: #aaa; width: 45%; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <h1>IkeDryBox Dashboard</h1>
@@ -95,6 +96,7 @@ const char index_html[] PROGMEM = R"rawliteral(
         <div style="display: flex; gap: 10px;">
             <button class="btn-main" style="background:#444;" onclick="toggleConfig()">SETTINGS</button>
             <button class="btn-main" style="background:#444;" onclick="toggleInfo()">INFO</button>
+            <button class="btn-main" style="background:#444;" onclick="toggleCharts()">CHARTS</button>
         </div>
         
         <div id="config" class="panel">
@@ -120,13 +122,23 @@ const char index_html[] PROGMEM = R"rawliteral(
             <div class="input-group"><label>Ki:</label><input type="number" step="0.01" id="ki"></div>
             <div class="input-group"><label>Kd:</label><input type="number" step="0.1" id="kd"></div>
             
-            <h3 style="color:#00BFFF">System, Network & MQTT</h3>
+            <h3 style="color:#00BFFF">System</h3>
             <div class="input-group"><label>Screen Timeout (min, 0=off):</label><input type="number" id="scr_to" min="0" step="1"></div>
+            <div class="input-group"><label>Red LED:</label><input type="range" id="led_r" min="0" max="255" value="240" oninput="document.getElementById('led_r_val').innerText=this.value"><span id="led_r_val" style="min-width:30px;text-align:center;">240</span></div>
+            <div class="input-group"><label>Green LED:</label><input type="range" id="led_g" min="0" max="255" value="240" oninput="document.getElementById('led_g_val').innerText=this.value"><span id="led_g_val" style="min-width:30px;text-align:center;">240</span></div>
+
+            <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+
+            <h3 style="color:#00FF00">Network</h3>
             <div class="input-group"><label>Hostname:</label><input type="text" id="hostname"></div>
             <div class="input-group"><label>Use DHCP:</label><input type="checkbox" id="dhcp" onchange="toggleDhcp(this.checked)" style="width:20px; height:20px;"></div>
             <div class="input-group"><label>Static IP:</label><input type="text" id="ip"></div>
             <div class="input-group"><label>Gateway:</label><input type="text" id="gw"></div>
             <div class="input-group"><label>Netmask:</label><input type="text" id="nm"></div>
+
+            <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+
+            <h3 style="color:#FFAA00">MQTT</h3>
             <div class="input-group"><label>MQTT Broker:</label><input type="text" id="mq"></div>
             <div class="input-group"><label>MQTT Port:</label><input type="number" id="m_port"></div>
             <div class="input-group"><label>MQTT User:</label><input type="text" id="m_user"></div>
@@ -135,7 +147,7 @@ const char index_html[] PROGMEM = R"rawliteral(
             <button class="btn-main" style="margin-top: 15px;" onclick="saveConfig()">SAVE & APPLY</button>
             
             <hr style="border: 0; border-top: 1px solid #333; margin: 25px 0;">
-            
+
             <h3 style="color:#FF3333">OTA Update</h3>
             <div style="background: #1a1a1a; padding: 10px; border-radius: 5px;">
                 <input type="file" id="fw_file" accept=".bin" style="margin-bottom: 10px;">
@@ -148,9 +160,38 @@ const char index_html[] PROGMEM = R"rawliteral(
             <h3 style="color:#00BFFF; margin-top: 0;">Information</h3>
             <table class="info-table" id="info_table"></table>
         </div>
+
+        <div id="chart_panel" class="panel">
+            <h3 style="color:#FFAA00; margin-top: 0;">Charts</h3>
+            <div style="position:relative; height:200px;"><canvas id="chart_temp"></canvas></div>
+            <div style="position:relative; height:200px; margin-top:15px;"><canvas id="chart_hum"></canvas></div>
+            <div style="position:relative; height:200px; margin-top:15px;"><canvas id="chart_power"></canvas></div>
+        </div>
     </div>
 
     <script>
+        const MAX_POINTS = 120;
+        let timeLabels = [], tempData = [], targetData = [];
+        let humData = [], heaterData = [], fanData = [];
+        let chartsInitialized = false;
+        let chartTemp = null, chartHum = null, chartPower = null;
+
+        function pushChartData(d) {
+            timeLabels.push(new Date().toLocaleTimeString());
+            tempData.push(d.temp);
+            targetData.push(d.target);
+            humData.push(d.hum);
+            heaterData.push(d.heater);
+            fanData.push(d.fan);
+            if (timeLabels.length > MAX_POINTS) {
+                timeLabels.shift(); tempData.shift(); targetData.shift();
+                humData.shift(); heaterData.shift(); fanData.shift();
+            }
+            if (chartTemp) chartTemp.update('none');
+            if (chartHum) chartHum.update('none');
+            if (chartPower) chartPower.update('none');
+        }
+
         function setFilament(val) { fetch('/api/set_filament?val=' + val, {method: 'POST'}).then(update); }
         
         function update() {
@@ -184,13 +225,13 @@ const char index_html[] PROGMEM = R"rawliteral(
                         stat.innerText = "READY"; stat.style.color = "#aaa";
                     }
                 }
+                pushChartData(d);
             });
         }
 
         function toggle() { fetch('/api/toggle', {method:'POST'}).then(update); }
         function adjTime(s) { fetch('/api/adj_time?val='+s, {method:'POST'}).then(update); }
         function adjTarget(v) { fetch('/api/adj_target?val='+v, {method:'POST'}).then(update); }
-        
         function toggleDhcp(checked) {
             document.getElementById('ip').disabled = checked;
             document.getElementById('gw').disabled = checked;
@@ -221,6 +262,10 @@ const char index_html[] PROGMEM = R"rawliteral(
                     document.getElementById('m_user').value = c.m_user;
                     document.getElementById('m_pass').value = c.m_pass;
                     document.getElementById('scr_to').value = c.scr_to; // Update input field with minutes
+                    document.getElementById('led_r').value = c.led_r;
+                    document.getElementById('led_g').value = c.led_g;
+                    document.getElementById('led_r_val').innerText = c.led_r;
+                    document.getElementById('led_g_val').innerText = c.led_g;
                     toggleDhcp(c.dhcp);
                 });
             }
@@ -259,6 +304,63 @@ const char index_html[] PROGMEM = R"rawliteral(
             }
         }
 
+        function toggleCharts() {
+            let p = document.getElementById('chart_panel');
+            let conf = document.getElementById('config');
+            let info = document.getElementById('info_panel');
+            conf.style.display = 'none';
+            info.style.display = 'none';
+            p.style.display = (p.style.display == 'block') ? 'none' : 'block';
+            if(p.style.display == 'block' && !chartsInitialized) {
+                initCharts();
+                chartsInitialized = true;
+            }
+        }
+
+        function initCharts() {
+            const opts = {
+                responsive: true, maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { labels: { color: '#aaa', boxWidth: 12 } } },
+                scales: {
+                    x: { ticks: { color: '#888', maxTicksLimit: 6 }, grid: { color: '#333' } },
+                    y: { ticks: { color: '#888' }, grid: { color: '#333' } }
+                }
+            };
+            chartTemp = new Chart(document.getElementById('chart_temp'), {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [
+                        { label: 'Temp °C', data: tempData, borderColor: '#FF3333', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0 },
+                        { label: 'Target °C', data: targetData, borderColor: '#FFAA00', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderDash: [4,4] }
+                    ]
+                },
+                options: opts
+            });
+            chartHum = new Chart(document.getElementById('chart_hum'), {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [
+                        { label: 'Humidity %', data: humData, borderColor: '#00BFFF', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0 }
+                    ]
+                },
+                options: opts
+            });
+            chartPower = new Chart(document.getElementById('chart_power'), {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [
+                        { label: 'Heater %', data: heaterData, borderColor: '#FF6600', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0 },
+                        { label: 'Fan %', data: fanData, borderColor: '#00FF00', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0 }
+                    ]
+                },
+                options: opts
+            });
+        }
+
         function saveConfig() {
             let data = {
                 scr_to: parseInt(document.getElementById('scr_to').value) || 0, // Parse minutes from input
@@ -276,7 +378,9 @@ const char index_html[] PROGMEM = R"rawliteral(
                 mqtt: document.getElementById('mq').value,
                 m_port: document.getElementById('m_port').value,
                 m_user: document.getElementById('m_user').value,
-                m_pass: document.getElementById('m_pass').value
+                m_pass: document.getElementById('m_pass').value,
+                led_r: parseInt(document.getElementById('led_r').value),
+                led_g: parseInt(document.getElementById('led_g').value)
             };
             fetch('/api/save_config', {
                 method: 'POST',
@@ -347,6 +451,8 @@ void setup_web_server() {
             doc["fan"] = 0;
         }
         
+        doc["led_r"] = led_r_intensity;
+        doc["led_g"] = led_g_intensity;
         doc["running"] = is_running;
         
         int h = remaining_seconds / 3600;
@@ -464,6 +570,8 @@ void setup_web_server() {
         doc["m_user"] = prefs.getString("m_user", "");
         doc["m_pass"] = prefs.getString("m_pass", "");
         doc["scr_to"] = screen_timeout_mins; // Pass the timeout value in minutes to WebUI
+        doc["led_r"] = prefs.getInt("led_r", 240);
+        doc["led_g"] = prefs.getInt("led_g", 240);
         prefs.end();
         
         String res; serializeJson(doc, res);
@@ -522,6 +630,16 @@ void setup_web_server() {
                 auto_screen_off = (screen_timeout_mins > 0);
                 prefs.putBool("scr_off", auto_screen_off);
                 // ------------------------------------
+                
+                // Save LED intensity (only if provided, prevent overriding saved values)
+                if (doc["led_r"].is<int>()) {
+                    led_r_intensity = constrain(doc["led_r"].as<int>(), 0, 255);
+                    prefs.putInt("led_r", led_r_intensity);
+                }
+                if (doc["led_g"].is<int>()) {
+                    led_g_intensity = constrain(doc["led_g"].as<int>(), 0, 255);
+                    prefs.putInt("led_g", led_g_intensity);
+                }
                 
                 prefs.end();
             }

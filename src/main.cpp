@@ -42,6 +42,10 @@ bool screen_is_off = false;
 float custom_temp = 50.0; // default 50 °C
 long custom_time = 18000; // default 5 hours (in seconds)
 
+// --- LED intensity (0 = max, 255 = off) ---
+int led_r_intensity = 240; // Red LED intensity
+int led_g_intensity = 240; // Green LED intensity
+
 // --- CONFIGURATION HARDWARE DISPLAY ---
 class LGFX : public lgfx::LGFX_Device {
     lgfx::Panel_ILI9341 _panel_instance;
@@ -161,6 +165,8 @@ void load_settings() {
     custom_time = prefs.getLong("c_time", 18000);
     screen_timeout_mins = prefs.getInt("scr_to", DEFAULT_SCREEN_TIMEOUT);
     auto_screen_off = prefs.getBool("scr_off", false);
+    led_r_intensity = prefs.getInt("led_r", 240);
+    led_g_intensity = prefs.getInt("led_g", 240);
 
     // If the IP is static, we configure WiFi
     if (!use_dhcp) {
@@ -307,21 +313,20 @@ void loop() {
     static bool blink_state = false;
 
     if (is_running) {
-        // Led Red Intermintent (when Heating)
-        if (millis() - last_blink > 500) { // Intermintent every 500ms
+        // Red LED blinking (when heating)
+        if (millis() - last_blink > 500) { // Blink every 500ms
             last_blink = millis();
             blink_state = !blink_state;
             
-            // 240 low intesity. 255 is OFF. (Up to 0, Max intensity)
-            if (blink_state) ledcWrite(3, 240); 
-            else ledcWrite(3, 255);            
+            if (blink_state) ledcWrite(3, led_r_intensity);
+            else ledcWrite(3, 255);
             
-            ledcWrite(4, 255); // Green led OFF
+            ledcWrite(4, 255); // Green LED off
         }
     } else {
-        // Green led ON (when in standby)
-        ledcWrite(3, 255); // Led Red off
-        ledcWrite(4, 240); // Green led ON whit low intensity (240)
+        // Green LED on (when in standby)
+        ledcWrite(3, 255); // Red LED off
+        ledcWrite(4, led_g_intensity); // Green LED on with variable intensity
     }
 
     static uint32_t last_timer_tick = 0;
