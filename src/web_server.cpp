@@ -124,8 +124,8 @@ const char index_html[] PROGMEM = R"rawliteral(
             
             <h3 style="color:#00BFFF">System</h3>
             <div class="input-group"><label>Screen Timeout (min, 0=off):</label><input type="number" id="scr_to" min="0" step="1"></div>
-            <div class="input-group"><label>Red LED:</label><input type="range" id="led_r" min="0" max="255" value="240" oninput="document.getElementById('led_r_val').innerText=this.value"><span id="led_r_val" style="min-width:30px;text-align:center;">240</span></div>
-            <div class="input-group"><label>Green LED:</label><input type="range" id="led_g" min="0" max="255" value="240" oninput="document.getElementById('led_g_val').innerText=this.value"><span id="led_g_val" style="min-width:30px;text-align:center;">240</span></div>
+            <div class="input-group"><label>Red LED:</label><input type="range" id="led_r" min="0" max="255" value="10" oninput="document.getElementById('led_r_val').innerText=this.value"><span id="led_r_val" style="min-width:30px;text-align:center;">10</span></div>
+            <div class="input-group"><label>Green LED:</label><input type="range" id="led_g" min="0" max="255" value="10" oninput="document.getElementById('led_g_val').innerText=this.value"><span id="led_g_val" style="min-width:30px;text-align:center;">10</span></div>
 
             <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
 
@@ -570,8 +570,8 @@ void setup_web_server() {
         doc["m_user"] = prefs.getString("m_user", "");
         doc["m_pass"] = prefs.getString("m_pass", "");
         doc["scr_to"] = screen_timeout_mins; // Pass the timeout value in minutes to WebUI
-        doc["led_r"] = prefs.getInt("led_r", 240);
-        doc["led_g"] = prefs.getInt("led_g", 240);
+        doc["led_r"] = prefs.getInt("led_r", 10);
+        doc["led_g"] = prefs.getInt("led_g", 10);
         prefs.end();
         
         String res; serializeJson(doc, res);

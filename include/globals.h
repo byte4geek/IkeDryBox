@@ -9,7 +9,7 @@
 #include <PubSubClient.h>
 
 // --- Firmware Version ---
-#define FIRMWARE_VERSION "1.0.7b"
+#define FIRMWARE_VERSION "1.0.7"
 
 // --- PIN and HARDWARE ---
 #define PIN_HEATER 5
