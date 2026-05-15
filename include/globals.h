@@ -73,6 +73,7 @@ extern int screen_timeout_mins;    // screen Timeout in minutes
 // Objects that main.cpp must update (Sensors, timers, etc.)
 extern lv_obj_t *label_temp; // temperature
 extern lv_obj_t *label_hum; // humidity
+extern lv_obj_t *dd_filament; // filament dropdown on the display
 extern lv_obj_t *label_heater_per; 
 extern lv_obj_t *label_fan_per;
 extern lv_obj_t *label_status;

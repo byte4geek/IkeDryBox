@@ -5,6 +5,7 @@
 
 // Internal variables only for this screen
 lv_obj_t *btn_tar_up, *btn_tar_dn, *btn_tim_up, *btn_tim_dn, *touch_shield;
+lv_obj_t *dd_filament;
 
 void update_timer_label() {
     int h = remaining_seconds / 3600;
@@ -131,11 +132,11 @@ void build_main_ui() {
     lv_line_set_points(line, pts, 2);
     lv_obj_set_style_line_color(line, lv_color_hex(0x333333), 0);
 
-    lv_obj_t *dd = lv_dropdown_create(main_screen);
-    lv_dropdown_set_options(dd, "PLA\nPETG\nABS\nTPU\nCustom"); // Added Custom
-    lv_obj_set_width(dd, 110);
-    lv_obj_align(dd, LV_ALIGN_TOP_LEFT, 20, 90);
-    lv_obj_add_event_cb(dd, dd_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    dd_filament = lv_dropdown_create(main_screen);
+    lv_dropdown_set_options(dd_filament, "PLA\nPETG\nABS\nTPU\nCustom"); // Added Custom
+    lv_obj_set_width(dd_filament, 110);
+    lv_obj_align(dd_filament, LV_ALIGN_TOP_LEFT, 20, 90);
+    lv_obj_add_event_cb(dd_filament, dd_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
     
     // --- LABEL TARGET TEMP ---
     label_target = lv_label_create(main_screen);

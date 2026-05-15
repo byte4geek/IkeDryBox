@@ -588,6 +588,15 @@ void setup_web_server() {
             
             update_timer_label();
             lv_label_set_text_fmt(label_target, "Target: %d C", (int)pid_Setpoint);
+            
+            // Sync the physical display dropdown
+            int fil_idx = 0;
+            if (current_filament == "PLA") fil_idx = 0;
+            else if (current_filament == "PETG") fil_idx = 1;
+            else if (current_filament == "ABS") fil_idx = 2;
+            else if (current_filament == "TPU") fil_idx = 3;
+            else if (current_filament == "Custom") fil_idx = 4;
+            if (dd_filament != NULL) lv_dropdown_set_selected(dd_filament, fil_idx);
         }
         server.send(200, "text/plain", "OK");
     });
