@@ -46,6 +46,9 @@ long custom_time = 18000; // default 5 hours (in seconds)
 int led_r_intensity = 10; // Red LED intensity (default barely visible)
 int led_g_intensity = 10; // Green LED intensity
 
+// --- Chart data points ---
+int chart_max_points = 900; // Default 900 points (~30 min at 2s poll)
+
 // --- CONFIGURATION HARDWARE DISPLAY ---
 class LGFX : public lgfx::LGFX_Device {
     lgfx::Panel_ILI9341 _panel_instance;
@@ -167,6 +170,7 @@ void load_settings() {
     auto_screen_off = prefs.getBool("scr_off", false);
     led_r_intensity = prefs.getInt("led_r", 10);
     led_g_intensity = prefs.getInt("led_g", 10);
+    chart_max_points = prefs.getInt("chrt_pts", 900);
 
     // If the IP is static, we configure WiFi
     if (!use_dhcp) {

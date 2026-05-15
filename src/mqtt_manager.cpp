@@ -9,6 +9,7 @@ PubSubClient mqttClient(espClient);
 String current_filament = "PLA";
 
 static String mqtt_host_cache = "";
+static bool mqtt_cache_valid = false; // false = re-read from prefs on next handle_mqtt()
 
 String get_device_id() {
     String id = hostname;
@@ -272,15 +273,13 @@ void setup_mqtt() {
 }
 
 void handle_mqtt() {
-    // 1. We read the memory ONLY if we haven't already done so (drastic optimization!)
-    static bool credentials_loaded = false;
     static int port = 1883;
     static String user = "";
     static String pass = "";
 
-    // When we save settings from the WebUI, we need to force reload
-    // To do this cleanly, if mqtt_host_cache is empty, let's try rereading.
-    if (!credentials_loaded) {
+    // When mqtt_cache_valid becomes false (after save), we reload credentials
+    if (!mqtt_cache_valid) {
+        mqttClient.disconnect();
         prefs.begin("drybox", true);
         // We use a safe check: if it doesn't exist, we put an empty string and it gives no error
         mqtt_host_cache = prefs.isKey("mqtt") ? prefs.getString("mqtt", "") : "";
@@ -288,7 +287,7 @@ void handle_mqtt() {
         user = prefs.isKey("m_user") ? prefs.getString("m_user", "") : "";
         pass = prefs.isKey("m_pass") ? prefs.getString("m_pass", "") : "";
         prefs.end();
-        credentials_loaded = true;
+        mqtt_cache_valid = true;
     }
 
     if (mqtt_host_cache == "") return; // If the host is empty, it does nothing and does NOT clog up the Serial
@@ -370,4 +369,8 @@ void publish_data() {
         mqttClient.print(out);
         mqttClient.endPublish();
     }
+}
+
+void mqtt_force_reconnect() {
+    mqtt_cache_valid = false;
 }

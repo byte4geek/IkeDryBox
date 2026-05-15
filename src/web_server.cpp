@@ -2,10 +2,12 @@
 #include "globals.h"
 #include "web_server.h"
 #include "ui_main.h"
+#include "mqtt_manager.h"
 #include <WebServer.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include <Update.h>
+#include <nvs_flash.h>
 
 WebServer server(80);
 
@@ -159,10 +161,27 @@ const char index_html[] PROGMEM = R"rawliteral(
         <div id="info_panel" class="panel">
             <h3 style="color:#00BFFF; margin-top: 0;">Information</h3>
             <table class="info-table" id="info_table"></table>
+            <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+            <h3 style="color:#FFAA00;">Backup</h3>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-main" style="background:#0088FF; padding:10px;" onclick="exportSettings()">EXPORT SETTINGS</button>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:10px; align-items:center;">
+                <input type="file" id="import_file" accept=".json" style="flex:1;">
+                <button class="btn-main" style="background:#FFAA00; padding:10px; width:auto;" onclick="importSettings()">IMPORT</button>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+            <h3 style="color:#FF3333;">Factory Reset</h3>
+            <div style="background: #1a1a1a; padding: 10px; border-radius: 5px; text-align:center;">
+                <div style="color:#FF6666; font-size:0.85em; margin-bottom:10px;">Resets all settings, MQTT, PID, network &amp; WiFi credentials</div>
+                <button class="btn-main" style="background:#CC0000; padding:10px;" onclick="factoryReset()">FACTORY RESET</button>
+            </div>
         </div>
 
         <div id="chart_panel" class="panel">
             <h3 style="color:#FFAA00; margin-top: 0;">Charts</h3>
+            <div class="input-group"><label>Data points:</label><div style="display:flex; gap:5px;"><input type="number" id="chrt_pts" min="60" max="3600" step="1"><button onclick="saveChartPoints()" style="background:#0088FF; padding:5px 10px; border-radius:4px; font-size:0.9em;">SAVE</button></div></div>
+            <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
             <div style="position:relative; height:200px;"><canvas id="chart_temp"></canvas></div>
             <div style="position:relative; height:200px; margin-top:15px;"><canvas id="chart_hum"></canvas></div>
             <div style="position:relative; height:200px; margin-top:15px;"><canvas id="chart_power"></canvas></div>
@@ -170,7 +189,7 @@ const char index_html[] PROGMEM = R"rawliteral(
     </div>
 
     <script>
-        const MAX_POINTS = 120;
+        let chartMaxPoints = 900;
         let timeLabels = [], tempData = [], targetData = [];
         let humData = [], heaterData = [], fanData = [];
         let chartsInitialized = false;
@@ -183,7 +202,7 @@ const char index_html[] PROGMEM = R"rawliteral(
             humData.push(d.hum);
             heaterData.push(d.heater);
             fanData.push(d.fan);
-            if (timeLabels.length > MAX_POINTS) {
+            if (timeLabels.length > chartMaxPoints) {
                 timeLabels.shift(); tempData.shift(); targetData.shift();
                 humData.shift(); heaterData.shift(); fanData.shift();
             }
@@ -311,9 +330,15 @@ const char index_html[] PROGMEM = R"rawliteral(
             conf.style.display = 'none';
             info.style.display = 'none';
             p.style.display = (p.style.display == 'block') ? 'none' : 'block';
-            if(p.style.display == 'block' && !chartsInitialized) {
-                initCharts();
-                chartsInitialized = true;
+            if(p.style.display == 'block') {
+                fetch('/api/config').then(r => r.json()).then(c => {
+                    chartMaxPoints = c.chrt_pts || 900;
+                    document.getElementById('chrt_pts').value = chartMaxPoints;
+                });
+                if (!chartsInitialized) {
+                    initCharts();
+                    chartsInitialized = true;
+                }
             }
         }
 
@@ -361,6 +386,14 @@ const char index_html[] PROGMEM = R"rawliteral(
             });
         }
 
+        function saveChartPoints() {
+            let val = parseInt(document.getElementById('chrt_pts').value) || 900;
+            fetch('/api/save_chart_pts?val=' + val, {method: 'POST'}).then(() => {
+                document.getElementById('chrt_pts').style.borderColor = '#00FF00';
+                setTimeout(() => document.getElementById('chrt_pts').style.borderColor = '', 2000);
+            });
+        }
+
         function saveConfig() {
             let data = {
                 scr_to: parseInt(document.getElementById('scr_to').value) || 0, // Parse minutes from input
@@ -386,7 +419,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(data)
-            }).then(() => alert("Settings Saved! System will reboot."));
+            }).then(() => alert("Settings Saved!"));
         }
 
         function uploadOTA() {
@@ -421,6 +454,42 @@ const char index_html[] PROGMEM = R"rawliteral(
                 }
             };
             req.send(fd);
+        }
+
+        function exportSettings() {
+            fetch('/api/config').then(r => r.json()).then(d => {
+                let blob = new Blob([JSON.stringify(d, null, 2)], {type: 'application/json'});
+                let a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'IkeDryBox-settings.json';
+                a.click();
+            });
+        }
+
+        function importSettings() {
+            let fileInput = document.getElementById('import_file');
+            let file = fileInput.files[0];
+            if (!file) { alert("Please select a .json file first!"); return; }
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                fetch('/api/save_config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: e.target.result
+                }).then(r => {
+                    if(r.ok) alert("Settings imported successfully!");
+                    else alert("Import failed!");
+                });
+            };
+            reader.readAsText(file);
+        }
+
+        function factoryReset() {
+            if (!confirm("WARNING: This will delete ALL settings, MQTT config, network, PID,\nLED values and WiFi credentials.\n\nThe device will restart as if freshly flashed.\n\nContinue?")) return;
+            if (!confirm("FINAL CONFIRMATION:\n\nThis action CANNOT be undone.\nAll data in NVS memory will be erased.\n\nProceed?")) return;
+            fetch('/api/factory_reset', {method: 'POST'}).then(r => {
+                if(r.ok) alert("Factory reset complete! Device will reboot...");
+            });
         }
 
         setInterval(update, 2000);
@@ -572,6 +641,7 @@ void setup_web_server() {
         doc["scr_to"] = screen_timeout_mins; // Pass the timeout value in minutes to WebUI
         doc["led_r"] = prefs.getInt("led_r", 10);
         doc["led_g"] = prefs.getInt("led_g", 10);
+        doc["chrt_pts"] = prefs.getInt("chrt_pts", 900);
         prefs.end();
         
         String res; serializeJson(doc, res);
@@ -641,12 +711,22 @@ void setup_web_server() {
                     prefs.putInt("led_g", led_g_intensity);
                 }
                 
+                // Save chart data points
+                if (doc["chrt_pts"].is<int>()) {
+                    chart_max_points = constrain(doc["chrt_pts"].as<int>(), 60, 3600);
+                    prefs.putInt("chrt_pts", chart_max_points);
+                }
+                
                 prefs.end();
+
+                // Apply hostname live (takes effect for DHCP on next reconnect)
+                WiFi.setHostname(hostname.c_str());
+
+                // Force MQTT reconnect so new broker/credentials take effect immediately
+                mqtt_force_reconnect();
             }
         }
         server.send(200, "text/plain", "OK");
-        delay(500); 
-        ESP.restart(); 
     });
 
     server.on("/api/info", HTTP_GET, []() {
@@ -708,6 +788,32 @@ void setup_web_server() {
                 Update.printError(Serial);
             }
         }
+    });
+
+    server.on("/api/save_chart_pts", HTTP_POST, []() {
+        if (server.hasArg("val")) {
+            int val = constrain(server.arg("val").toInt(), 60, 3600);
+            chart_max_points = val;
+            prefs.begin("drybox", false);
+            prefs.putInt("chrt_pts", val);
+            prefs.end();
+            server.send(200, "text/plain", "OK");
+        } else {
+            server.send(400, "text/plain", "Missing val");
+        }
+    });
+
+    server.on("/api/factory_reset", HTTP_POST, []() {
+        server.send(200, "text/plain", "OK");
+        delay(100);
+
+        WiFi.disconnect(true);
+        WiFi.mode(WIFI_OFF);
+
+        nvs_flash_erase();
+        nvs_flash_init();
+
+        ESP.restart();
     });
 
     server.begin();

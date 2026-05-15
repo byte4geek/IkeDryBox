@@ -9,7 +9,7 @@
 #include <PubSubClient.h>
 
 // --- Firmware Version ---
-#define FIRMWARE_VERSION "1.0.7"
+#define FIRMWARE_VERSION "1.0.8"
 
 // --- PIN and HARDWARE ---
 #define PIN_HEATER 5
@@ -99,9 +99,12 @@ extern lv_obj_t *lbl_val_c_temp;
 extern lv_obj_t *lbl_val_c_time;
 extern lv_obj_t *lbl_val_c_time_m; // <-- New: Minutes Label
 
-// --- LED intensity (0 = max, 255 = off) ---
+// --- LED intensity (0 = off, 255 = max) ---
 extern int led_r_intensity;
 extern int led_g_intensity;
+
+// --- Chart data points ---
+extern int chart_max_points;
 
 // --- Backlight ---
 extern bool auto_screen_off;
