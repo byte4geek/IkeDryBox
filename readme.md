@@ -14,7 +14,7 @@ IkeDryBox is an advanced, ESP32-based DIY smart filament dryer for 3D printing. 
 * **💡 RGB Status LED:** Visual feedback for heating status (pulsing red) and standby mode (dimmed green) using a common-anode of the builtin RGB LED.
 
 ## 🛠️ Hardware Requirements
-* **Microcontroller:** ESP32 with ST7789 chip with builtin LCD color display (2.4" Cheap Yellow Display with resistive touch and builtin RGB led mounted on back of the board) or similar ESP32 board with TFT. [ST7789 LCD Board](https://s.click.aliexpress.com/e/_c3GVNG01) more description and documentations regarding this board are available here [Board Documentations](https://www.lcdwiki.com/2.8inch_ESP32-32E_Display)
+* **Microcontroller:** ESP32 with ST7789 chip with builtin LCD color display (2.4" Cheap Yellow Display with resistive touch and builtin RGB led mounted on back of the board) or similar ESP32 board with TFT. [ST7789 LCD Board](https://s.click.aliexpress.com/e/_c3GVNG01) more description and documentations regarding this board are available here [Board Documentations](https://www.lcdwiki.com/2.8inch_ESP32-32E-7789)
 
     or
 
