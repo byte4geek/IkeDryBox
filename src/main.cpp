@@ -51,7 +51,11 @@ int chart_max_points = 900; // Default 900 points (~30 min at 2s poll)
 
 // --- CONFIGURATION HARDWARE DISPLAY ---
 class LGFX : public lgfx::LGFX_Device {
+#ifdef HARDWARE_ILI9341
     lgfx::Panel_ILI9341 _panel_instance;
+#elif defined(HARDWARE_ST7789)
+    lgfx::Panel_ST7789 _panel_instance;
+#endif
     lgfx::Bus_SPI _bus_instance;
     lgfx::Light_PWM _light_instance;
     lgfx::Touch_XPT2046 _touch_instance;
@@ -75,17 +79,27 @@ public:
             cfg.pin_cs = 15;
             cfg.pin_rst = -1;
             cfg.pin_busy = -1;
+#ifdef HARDWARE_ILI9341
             cfg.memory_width = 320;
             cfg.memory_height = 240;
             cfg.panel_width = 320;
             cfg.panel_height = 240;
             cfg.offset_rotation = 4;
             cfg.rgb_order = true;
+            cfg.invert = false;
+#elif defined(HARDWARE_ST7789)
+            cfg.memory_width = 240;
+            cfg.memory_height = 320;
+            cfg.panel_width = 240;
+            cfg.panel_height = 320;
+            cfg.offset_rotation = 0;
+            cfg.rgb_order = false;
+#endif
             _panel_instance.config(cfg);
         }
         { 
             auto cfg = _light_instance.config();
-            cfg.pin_bl      = 27;
+            cfg.pin_bl      = BACKLIGHT_PIN;
             cfg.invert      = false;
             cfg.freq        = 44100;
             cfg.pwm_channel = 7;
@@ -98,9 +112,19 @@ public:
             cfg.x_max = 3367;
             cfg.y_min = 192;
             cfg.y_max = 3732;
+#ifdef HARDWARE_ILI9341
             cfg.bus_shared = true;
             cfg.spi_host = SPI2_HOST;
             cfg.pin_cs = 33;
+#elif defined(HARDWARE_ST7789)
+            cfg.bus_shared = false;
+            cfg.spi_host = SPI3_HOST;
+            cfg.pin_sclk = 25;
+            cfg.pin_mosi = 32;
+            cfg.pin_miso = 39;
+            cfg.pin_cs = 33;
+            cfg.pin_int = 36;
+#endif
             _touch_instance.config(cfg);
             _panel_instance.setTouch(&_touch_instance);
         }
@@ -151,8 +175,13 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
     uint16_t touchX, touchY;
     if (tft.getTouchRaw(&touchX, &touchY)) {
         data->state = LV_INDEV_STATE_PR;
+#ifdef HARDWARE_ILI9341
         data->point.x = constrain(map(touchX, 300, 3800, 0, 320), 0, 320);
         data->point.y = constrain(map(touchY, 300, 3800, 0, 240), 0, 240);
+#elif defined(HARDWARE_ST7789)
+        data->point.x = constrain(map(touchY, 300, 3800, 0, 320), 0, 320);
+        data->point.y = constrain(map(touchX, 300, 3800, 0, 240), 0, 240);
+#endif
     } else { data->state = LV_INDEV_STATE_REL; }
 }
 
@@ -189,8 +218,8 @@ void setup() {
     
     // pinMode(21, OUTPUT); 
     // digitalWrite(21, LOW);
-    pinMode(17, OUTPUT); digitalWrite(17, HIGH);
-    pinMode(4, OUTPUT);  digitalWrite(4, HIGH);
+    pinMode(LED_G, OUTPUT); digitalWrite(LED_G, HIGH);
+    pinMode(LED_R, OUTPUT);  digitalWrite(LED_R, HIGH);
     
     // pinMode(BACKLIGHT_PIN, OUTPUT);
     // digitalWrite(BACKLIGHT_PIN, LOW); // Turn on screen
@@ -199,9 +228,9 @@ void setup() {
     
     // Channel PWM 3 and 4 for the LEDs
     ledcSetup(3, 5000, 8); // Channel for Red
-    ledcAttachPin(4, 3);
+    ledcAttachPin(LED_R, 3);
     ledcSetup(4, 5000, 8); // Channel for Green
-    ledcAttachPin(17, 4);
+    ledcAttachPin(LED_G, 4);
 
     // We turn everything off at the beginning (HIGH = Off)
     ledcWrite(3, 255); 
@@ -216,7 +245,13 @@ void setup() {
     boxPID.SetMode(AUTOMATIC); boxPID.SetOutputLimits(0, 255);
     boxPID.SetSampleTime(1000); // Synchronize the PID with your sensor
 
-    tft.init(); tft.setRotation(0); tft.setBrightness(180); tft.fillScreen(0);
+    tft.init();
+#ifdef HARDWARE_ILI9341
+    tft.setRotation(0);
+#elif defined(HARDWARE_ST7789)
+    tft.setRotation(1);
+#endif
+    tft.setBrightness(180); tft.fillScreen(0);
     tft.setCursor(20, 20); tft.setTextColor(0xFFAA00); tft.println("Booting IkeDryBox...");
 
     WiFiManager wm;
@@ -235,7 +270,11 @@ void setup() {
     }
     
     // Start sensor (one time only)
+#ifdef HARDWARE_ILI9341
     Wire.begin(21, 22);
+#elif defined(HARDWARE_ST7789)
+    Wire.begin(27, 18);
+#endif
     if (!sht31.begin(0x44)) {
         Serial.println("SHT31 sensor error!");
     }

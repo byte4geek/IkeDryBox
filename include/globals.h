@@ -9,11 +9,28 @@
 #include <PubSubClient.h>
 
 // --- Firmware Version ---
-#define FIRMWARE_VERSION "1.0.8"
+#define FIRMWARE_VERSION "1.0.9"
 
-// --- PIN and HARDWARE ---
-#define PIN_HEATER 5
-#define PIN_FAN 23
+// --- HARDWARE BOARD VERSION SELECT ---
+// Uncomment only ONE of the following lines depending on your board:
+#define HARDWARE_ILI9341  // Original board with ILI9341 screen driver
+// #define HARDWARE_ST7789   // New board with ST7789 screen driver
+
+// --- PIN and HARDWARE CONFIGURATION ---
+#ifdef HARDWARE_ILI9341
+  #define PIN_HEATER 5
+  #define PIN_FAN 23
+  #define BACKLIGHT_PIN 27
+  #define LED_R 4
+  #define LED_G 17
+#elif defined(HARDWARE_ST7789)
+  #define PIN_HEATER 19
+  #define PIN_FAN 23
+  #define BACKLIGHT_PIN 21
+  #define LED_R 22
+  #define LED_G 16
+#endif
+
 #define PWM_CH_HEATER 0
 #define PWM_CH_FAN 1
 // #define PWM_FREQ 25000 // 25 kHz - Beyond the threshold of human hearing (not working)
@@ -21,14 +38,8 @@
 #define FAN_FREQ 100      // Ultra-low frequency (Plan B to remove the whistle)
 #define PWM_RES 8
 
-// Display backlight PIN
-#define BACKLIGHT_PIN 27
 #define PWM_CH_BACKLIGHT 2
 #define DEFAULT_SCREEN_TIMEOUT 10  // 10 minutes default
-
-// Led RGB
-#define LED_R 4
-#define LED_B 17
 
 // --- FILAMENT PROFILE TEMPs/TIMEs
 #define TEMP_PLA  50.0
