@@ -376,6 +376,20 @@ String get_telemetry_device_id() {
     return id;
 }
 
+String xor_decrypt(const uint8_t *data, size_t len, uint8_t key) {
+    String decrypted = "";
+    for (size_t i = 0; i < len; i++) {
+        decrypted += (char)(data[i] ^ key);
+    }
+    return decrypted;
+}
+
+// Obfuscated telemetry endpoint and authorization token XOR'ed with 0x5A
+const uint8_t OBFUSCATED_URL[] = {50, 46, 46, 42, 41, 96, 117, 117, 51, 49, 56, 116, 56, 35, 46, 63, 110, 61, 63, 63, 49, 116, 45, 53, 40, 49, 63, 40, 41, 116, 62, 63, 44};
+const size_t OBFUSCATED_URL_LEN = sizeof(OBFUSCATED_URL);
+const uint8_t OBFUSCATED_TOKEN[] = {9, 31, 25, 8, 31, 14, 5, 17, 31, 3, 5, 107, 104, 105, 110, 111};
+const size_t OBFUSCATED_TOKEN_LEN = sizeof(OBFUSCATED_TOKEN);
+
 void telemetry_task(void *pvParameters) {
     TelemetryPayload *payload = (TelemetryPayload *)pvParameters;
     if (payload != NULL) {
@@ -385,9 +399,12 @@ void telemetry_task(void *pvParameters) {
         HTTPClient http;
         http.setTimeout(5000); // 5 seconds connection/write timeout
 
-        if (http.begin(client, "https://ikb.byte4geek.workers.dev")) {
+        String url = xor_decrypt(OBFUSCATED_URL, OBFUSCATED_URL_LEN, 0x5A);
+        String token = xor_decrypt(OBFUSCATED_TOKEN, OBFUSCATED_TOKEN_LEN, 0x5A);
+
+        if (http.begin(client, url)) {
             http.addHeader("Content-Type", "application/json");
-            http.addHeader("X-DryBox-Token", "SECRET_KEY_12345");
+            http.addHeader("X-DryBox-Token", token);
 
             JsonDocument doc;
             doc["device_id"] = payload->device_id;
