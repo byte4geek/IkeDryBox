@@ -27,50 +27,22 @@ IkeDryBox is an advanced, ESP32-based DIY smart filament dryer for 3D printing. 
 * **Printables parts to assemble the project** [Printables parts](https://makerworld.com/it/models/2755143-ikedrybox-smart-active-drybox-ikea-samla-22l)
 * **Box** For this DryBox I used an ikea samla 22lt container, but you can choose another thing to do it.
 
-## 📌 Board & Pinout Comparison
+## 📌 Pinout Configuration
 
-IkeDryBox supports two distinct hardware configurations, which can be selected dynamically at runtime via the WebUI. Below is the pinout comparison between the original CYD (ILI9341) and the new 2.8" ESP32-32E (ST7789) board:
+Key hardware connections based on the wiring diagram:
 
-| Component | ILI9341 Board (Original CYD) | ST7789 Board (New ESP32-32E) | Connection Note |
-| :--- | :---: | :---: | :--- |
-| **Display Panel** | ILI9341 (2.4" TFT) | ST7789 (2.8" TFT) | SPI2 Bus |
-| **Backlight Pin** | `27` | `21` | PWM Controlled |
-| **Touch Controller** | XPT2046 (Shared SPI2) | XPT2046 (Dedicated SPI3) | SPI3 Pins: SCLK=25, MOSI=32, MISO=39, CS=33, INT=36 |
-| **SHT31 SDA (I2C)** | `21` | `27` | High-precision Temp & Humidity sensor |
-| **SHT31 SCL (I2C)** | `22` | `18` | High-precision Temp & Humidity sensor |
-| **RGB LED (Red)** | `4` | `22` | Common Anode (Inverted logic, PWM controlled) |
-| **RGB LED (Green)**| `17` | `16` | Common Anode (Inverted logic, PWM controlled) |
-| **Heater MOSFET** | `5` | `19` | PWM (1000Hz) |
-| **Fan MOSFET** | `23` | `23` | PWM (100Hz) |
+| Component | ESP32 Pin | Note |
+| :--- | :--- | :--- |
+| **SHT31 SDA** | `21` | I2C Data |
+| **SHT31 SCL** | `22` | I2C Clock |
+| **RGB LED (Red)** | `4` | PWM Controlled (Inverted Logic) |
+| **RGB LED (Green)**| `17` | PWM Controlled (Inverted Logic) |
+| **Heater MOSFET** | `5` | 1000Hz PWM for stable heating |
+| **Fan MOSFET** | `23` | 100Hz PWM for silent operation |
 
----
+## 🔌 Wiring Diagram
 
-## 🖥️ How to Select Your Hardware
-
-### 1. In the WebUI
-1. Access the IkeDryBox web interface by entering the device IP in your browser.
-2. Go to **Settings** and look for the **System** section.
-3. Locate the **Display Board Type** dropdown menu:
-   - Select **ILI9341 (Original)** if using the standard 2.4" Cheap Yellow Display.
-   - Select **ST7789 (New)** if using the 2.8" ESP32-32E (ST7789) LCDWiki board.
-4. Click **SAVE & APPLY**. The settings will be saved to NVS (Preferences) and the ESP32 will automatically reboot to apply the new pin mapping and initialization sequence.
-
-> [!NOTE]
-> If your screen is currently black because of an incorrect board selection, the ESP32 will still boot, connect to WiFi, and run the web server. You can access the WebUI from your phone or PC to select the correct board type, and the screen will start working after the automatic reboot.
-
-### 2. Wiring Details for the ST7789 Board
-Because of GPIO conflicts on the ST7789 board (where GPIO 21 is used for the backlight instead of I2C SDA, and GPIO 22 is used for the Red LED instead of I2C SCL), the I2C bus and other components are routed differently:
-- **I2C Bus (SHT31 Sensor)**: Wire the SHT31 sensor to the 4-pin JST connector labeled `SPI Peripheral` (or I2C depending on the board version) using **GPIO 27 (SDA)** and **GPIO 18 (SCL)**.
-- **Heater & Fan MOSFETs**: Wire the Heater MOSFET gate to **GPIO 19** and the Fan MOSFET gate to **GPIO 23** (also available on the JST peripheral connector).
-- **RGB LEDs**: The board uses the onboard RGB LED pins **GPIO 22 (Red)** and **GPIO 16 (Green)**.
-
-## 🔌 Wiring Diagrams
-
-### ILI9341 Board (Original CYD)
-![IkeDryBox Wiring Diagram ILI9341](https://github.com/byte4geek/IkeDryBox/blob/main/images/IkeDryBox_wiring_diagram.png)
-
-### ST7789 Board (New ESP32-32E)
-![IkeDryBox Wiring Diagram ST7789](https://github.com/byte4geek/IkeDryBox/blob/main/images/IkeDryBox_wiring_diagram_ST7789.png)
+![IkeDryBox Wiring Diagram](https://github.com/byte4geek/IkeDryBox/blob/main/images/IkeDryBox_wiring_diagram.png)
 
 ## 💻 Software Dependencies
 
