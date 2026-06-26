@@ -125,7 +125,6 @@ public:
             cfg.pin_cs = 15;
             cfg.pin_rst = -1;
             cfg.pin_busy = -1;
-#ifdef HARDWARE_ILI9341
             cfg.memory_width = 320;
             cfg.memory_height = 240;
             cfg.panel_width = 320;
