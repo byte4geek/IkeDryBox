@@ -9,7 +9,7 @@
 #include <PubSubClient.h>
 
 // --- Firmware Version ---
-#define FIRMWARE_VERSION "1.0.10"
+#define FIRMWARE_VERSION "1.0.11"
 
 // --- DYNAMIC HARDWARE CONFIGURATION ---
 extern bool is_st7789;
@@ -55,6 +55,8 @@ extern int current_humidity; // for fix NaN
 extern double Kp, Ki, Kd;
 extern bool is_running;
 extern long remaining_seconds;
+extern bool opt_in_telemetry;
+extern long target_time_sec;
 
 // --- hostname ---
 extern String hostname;
@@ -86,8 +88,9 @@ extern String current_status;
 
 extern WiFiClient espClient;
 extern PubSubClient mqttClient;
-extern String current_filament; // To trace the selected material
+extern String current_filament;
 extern void publish_data();
+extern void send_telemetry(String filament_type, float target_temp, int target_time_sec, int actual_duration_sec, String status, uint32_t uptime_sec);
 
 // --- CUSTOM FILAMENT ---
 extern float custom_temp;

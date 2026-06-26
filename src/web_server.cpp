@@ -44,6 +44,13 @@ const char index_html[] PROGMEM = R"rawliteral(
         .info-table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
         .info-table td { padding: 8px 4px; border-bottom: 1px solid #333; }
         .info-table td:first-child { font-weight: bold; color: #aaa; width: 45%; }
+        
+        /* Tooltip container */
+        .tooltip { position: relative; display: inline-block; cursor: pointer; margin-left: 5px; color: #00BFFF; font-weight: bold; }
+        /* Tooltip text */
+        .tooltip .tooltiptext { visibility: hidden; width: 260px; background-color: #222; color: #fff; text-align: left; border-radius: 6px; padding: 12px; position: absolute; z-index: 10; bottom: 125%; left: 50%; margin-left: -130px; opacity: 0; transition: opacity 0.3s; font-size: 0.8em; line-height: 1.4; border: 1px solid #555; box-shadow: 0 4px 12px rgba(0,0,0,0.6); font-weight: normal; pointer-events: none; }
+        /* Show the tooltip text when hovering */
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
@@ -144,6 +151,13 @@ const char index_html[] PROGMEM = R"rawliteral(
             <div class="input-group"><label>Static IP:</label><input type="text" id="ip"></div>
             <div class="input-group"><label>Gateway:</label><input type="text" id="gw"></div>
             <div class="input-group"><label>Netmask:</label><input type="text" id="nm"></div>
+            <div class="input-group">
+                <label>
+                    Share Anonymous Telemetry 
+                    <span class="tooltip">ⓘ<span class="tooltiptext">Collected data is completely anonymous (duration, temp, filament type, and firmware version) and does not contain any personal or network details (such as IP or MAC). Sharing this data is free of charge, but it helps me greatly to improve the project and its development!</span></span>:
+                </label>
+                <input type="checkbox" id="telemetry" style="width:20px; height:20px;">
+            </div>
 
             <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
 
@@ -293,6 +307,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                     document.getElementById('led_r_val').innerText = c.led_r;
                     document.getElementById('led_g_val').innerText = c.led_g;
                     document.getElementById('is_st7789').value = c.is_st7789 ? "true" : "false";
+                    document.getElementById('telemetry').checked = c.telemetry;
                     toggleDhcp(c.dhcp);
                 });
             }
@@ -320,6 +335,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                     addRow("IP Address", d.ip);
                     addRow("Gateway", d.gw);
                     addRow("Subnet Mask", d.nm);
+                    addRow("DNS Server", d.dns);
                     html += `<tr><td colspan="2"><hr style="border:0; border-top:1px solid #333; margin:5px 0;"></td></tr>`;
                     addRow("Flash Size", d.flash_size);
                     addRow("Program Size", d.sketch_size);
@@ -422,7 +438,8 @@ const char index_html[] PROGMEM = R"rawliteral(
                 m_pass: document.getElementById('m_pass').value,
                 led_r: parseInt(document.getElementById('led_r').value),
                 led_g: parseInt(document.getElementById('led_g').value),
-                is_st7789: document.getElementById('is_st7789').value === "true"
+                is_st7789: document.getElementById('is_st7789').value === "true",
+                telemetry: document.getElementById('telemetry').checked
             };
             fetch('/api/save_config', {
                 method: 'POST',
@@ -661,6 +678,7 @@ void setup_web_server() {
         doc["led_g"] = prefs.getInt("led_g", 10);
         doc["chrt_pts"] = prefs.getInt("chrt_pts", 900);
         doc["is_st7789"] = is_st7789;
+        doc["telemetry"] = opt_in_telemetry;
         prefs.end();
         
         String res; serializeJson(doc, res);
@@ -747,6 +765,11 @@ void setup_web_server() {
                     }
                 }
                 
+                if (doc["telemetry"].is<bool>()) {
+                    opt_in_telemetry = doc["telemetry"].as<bool>();
+                    prefs.putBool("telemetry", opt_in_telemetry);
+                }
+                
                 prefs.end();
 
                 // Apply hostname live (takes effect for DHCP on next reconnect)
@@ -788,6 +811,7 @@ void setup_web_server() {
         doc["ip"] = WiFi.localIP().toString();
         doc["gw"] = WiFi.gatewayIP().toString();
         doc["nm"] = WiFi.subnetMask().toString();
+        doc["dns"] = WiFi.dnsIP(0).toString();
         
         doc["free_heap"] = String(ESP.getFreeHeap() / 1024) + " KB";
         doc["flash_size"] = String(ESP.getFlashChipSize() / 1024) + " KB";

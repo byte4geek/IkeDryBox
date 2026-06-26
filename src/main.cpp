@@ -8,6 +8,9 @@
 #include <Adafruit_SHT31.h>
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 
 // --- EFFECTIVE INSTANTIATION OF GLOBAL VARIABLES ---
 Preferences prefs;
@@ -23,6 +26,8 @@ lv_obj_t *ta_hostname;
 
 bool is_running = false;
 long remaining_seconds = 5 * 3600;
+bool opt_in_telemetry = true;
+long target_time_sec = 0;
 
 bool use_dhcp = true; 
 lv_obj_t *cb_dhcp;
@@ -239,6 +244,7 @@ void load_settings() {
     led_r_intensity = prefs.getInt("led_r", 10);
     led_g_intensity = prefs.getInt("led_g", 10);
     chart_max_points = prefs.getInt("chrt_pts", 900);
+    opt_in_telemetry = prefs.getBool("telemetry", true);
 
     // If the IP is static, we configure WiFi
     if (!use_dhcp) {
@@ -246,7 +252,7 @@ void load_settings() {
         ip.fromString(prefs.getString("ip", "192.168.1.100"));
         gw.fromString(prefs.getString("gw", "192.168.1.1"));
         nm.fromString(prefs.getString("nm", "255.255.255.0"));
-        WiFi.config(ip, gw, nm);
+        WiFi.config(ip, gw, nm, gw, IPAddress(8, 8, 8, 8));
         WiFi.setHostname(hostname.c_str());
     }
     prefs.end();
@@ -339,9 +345,133 @@ void setup() {
     lv_obj_add_flag(touch_shield, LV_OBJ_FLAG_CLICKABLE); // Capture the touch
     lv_obj_add_event_cb(touch_shield, shield_event_cb, LV_EVENT_CLICKED, NULL); // Wakeup at touch
     lv_obj_add_flag(touch_shield, LV_OBJ_FLAG_HIDDEN); // default hide at boot
+
+    uint32_t uptime_sec = (uint32_t)(esp_timer_get_time() / 1000000ULL);
+    send_telemetry("none", 0.0, 0, 0, "boot", uptime_sec);
+}
+
+struct TelemetryPayload {
+    String device_id;
+    String filament;
+    float target_temp;
+    int target_time_sec;
+    int actual_duration_sec;
+    String status;
+    uint32_t uptime_sec;
+};
+
+String get_telemetry_device_id() {
+    prefs.begin("drybox", false);
+    String id = prefs.getString("device_id", "");
+    if (id == "") {
+        id = "ibx_" + String(esp_random(), HEX);
+        prefs.putString("device_id", id);
+        Serial.println("[Telemetry] Generated new device ID: " + id);
+    }
+    prefs.end();
+    return id;
+}
+
+void telemetry_task(void *pvParameters) {
+    TelemetryPayload *payload = (TelemetryPayload *)pvParameters;
+    if (payload != NULL) {
+        WiFiClientSecure client;
+        client.setInsecure();
+
+        HTTPClient http;
+        http.setTimeout(5000); // 5 seconds connection/write timeout
+
+        if (http.begin(client, "https://ikb.byte4geek.workers.dev")) {
+            http.addHeader("Content-Type", "application/json");
+            http.addHeader("X-DryBox-Token", "SECRET_KEY_12345");
+
+            JsonDocument doc;
+            doc["device_id"] = payload->device_id;
+            doc["filament"] = payload->filament;
+            doc["target_temp"] = payload->target_temp;
+            doc["target_time_minutes"] = payload->target_time_sec / 60;
+            doc["actual_duration_minutes"] = payload->actual_duration_sec / 60;
+            doc["status"] = payload->status;
+            doc["uptime_seconds"] = payload->uptime_sec;
+            doc["fw_version"] = FIRMWARE_VERSION;
+            doc["display_type"] = is_st7789 ? "ST7789" : "ILI9341";
+
+            String body;
+            serializeJson(doc, body);
+
+            Serial.println("[Telemetry Task] Sending JSON: " + body);
+            int httpResponseCode = http.POST(body);
+            if (httpResponseCode > 0) {
+                Serial.printf("[Telemetry Task] HTTPS POST Success: %d\n", httpResponseCode);
+            } else {
+                Serial.printf("[Telemetry Task] HTTPS POST Error: %s\n", http.errorToString(httpResponseCode).c_str());
+            }
+            http.end();
+        } else {
+            Serial.println("[Telemetry Task] Unable to initialize HTTPClient");
+        }
+        delete payload;
+    }
+    vTaskDelete(NULL); // Auto-destroy the task
+}
+
+void send_telemetry(String filament_type, float target_temp, int target_time_sec, int actual_duration_sec, String status, uint32_t uptime_sec) {
+    if (!opt_in_telemetry && status != "boot") {
+        Serial.println("[Telemetry] Skipped (opt-out)");
+        return;
+    }
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("[Telemetry] Skipped (WiFi not connected)");
+        return;
+    }
+
+    TelemetryPayload *payload = new TelemetryPayload();
+    payload->device_id = get_telemetry_device_id();
+    payload->filament = filament_type;
+    payload->target_temp = target_temp;
+    payload->target_time_sec = target_time_sec;
+    payload->actual_duration_sec = actual_duration_sec;
+    payload->status = status;
+    payload->uptime_sec = uptime_sec;
+
+    BaseType_t res = xTaskCreate(
+        telemetry_task,
+        "tele_task",
+        8192,
+        (void *)payload,
+        1,
+        NULL
+    );
+    if (res != pdPASS) {
+        Serial.println("[Telemetry] Failed to create background task");
+        delete payload;
+    }
 }
 
 void loop() {
+    static bool was_running = false;
+    if (is_running && !was_running) {
+        target_time_sec = remaining_seconds;
+        was_running = true;
+        Serial.printf("[Telemetry] Cycle started. Target time recorded: %ld sec\n", target_time_sec);
+    } else if (!is_running && was_running) {
+        uint32_t uptime_sec = (uint32_t)(esp_timer_get_time() / 1000000ULL);
+        if (remaining_seconds <= 0) {
+            // Finished naturally
+            send_telemetry(current_filament, pid_Setpoint, target_time_sec, target_time_sec, "completed", uptime_sec);
+        } else {
+            // Manually stopped
+            long actual_duration_sec = target_time_sec - remaining_seconds;
+            if (actual_duration_sec < 0) actual_duration_sec = 0;
+            if (actual_duration_sec > 60) {
+                send_telemetry(current_filament, pid_Setpoint, target_time_sec, actual_duration_sec, "interrupted", uptime_sec);
+            } else {
+                Serial.printf("[Telemetry] Cycle interrupted after %ld sec (<= 60s, skipped)\n", actual_duration_sec);
+            }
+        }
+        was_running = false;
+    }
+
     lv_tick_inc(5);
     lv_timer_handler();
     delay(5);
