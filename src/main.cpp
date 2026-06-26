@@ -49,18 +49,25 @@ int led_g_intensity = 10; // Green LED intensity
 // --- Chart data points ---
 int chart_max_points = 900; // Default 900 points (~30 min at 2s poll)
 
+// --- Dynamic hardware selection variables ---
+bool is_st7789 = true;
+int PIN_HEATER = 19;
+int PIN_FAN = 23;
+int BACKLIGHT_PIN = 21;
+int LED_R = 22;
+int LED_G = 16;
+
 // --- CONFIGURATION HARDWARE DISPLAY ---
 class LGFX : public lgfx::LGFX_Device {
-#ifdef HARDWARE_ILI9341
-    lgfx::Panel_ILI9341 _panel_instance;
-#elif defined(HARDWARE_ST7789)
-    lgfx::Panel_ST7789 _panel_instance;
-#endif
+    lgfx::Panel_ILI9341 _panel_ili;
+    lgfx::Panel_ST7789 _panel_st;
     lgfx::Bus_SPI _bus_instance;
     lgfx::Light_PWM _light_instance;
     lgfx::Touch_XPT2046 _touch_instance;
 public:
-    LGFX(void) {
+    LGFX(void) {}
+
+    void init_for_board(bool use_st7789) {
         { 
             auto cfg = _bus_instance.config();
             cfg.spi_host = SPI2_HOST;
@@ -72,10 +79,49 @@ public:
             cfg.pin_dc = 2;
             cfg.dma_channel = 0;
             _bus_instance.config(cfg);
-            _panel_instance.setBus(&_bus_instance);
         }
         { 
-            auto cfg = _panel_instance.config();
+            auto cfg = _light_instance.config();
+            cfg.pin_bl      = use_st7789 ? 21 : 27;
+            cfg.invert      = false;
+            cfg.freq        = 44100;
+            cfg.pwm_channel = 7;
+            _light_instance.config(cfg);
+        }
+        if (use_st7789) {
+            auto cfg = _panel_st.config();
+            cfg.pin_cs = 15;
+            cfg.pin_rst = -1;
+            cfg.pin_busy = -1;
+            cfg.memory_width = 240;
+            cfg.memory_height = 320;
+            cfg.panel_width = 240;
+            cfg.panel_height = 320;
+            cfg.offset_rotation = 0;
+            cfg.rgb_order = false;
+            cfg.invert = false;
+            _panel_st.config(cfg);
+            _panel_st.setBus(&_bus_instance);
+            _panel_st.setLight(&_light_instance);
+            {
+                auto cfg_t = _touch_instance.config();
+                cfg_t.x_min = 222;
+                cfg_t.x_max = 3367;
+                cfg_t.y_min = 192;
+                cfg_t.y_max = 3732;
+                cfg_t.bus_shared = false;
+                cfg_t.spi_host = SPI3_HOST;
+                cfg_t.pin_sclk = 25;
+                cfg_t.pin_mosi = 32;
+                cfg_t.pin_miso = 39;
+                cfg_t.pin_cs = 33;
+                cfg_t.pin_int = 36;
+                _touch_instance.config(cfg_t);
+                _panel_st.setTouch(&_touch_instance);
+            }
+            setPanel(&_panel_st);
+        } else {
+            auto cfg = _panel_ili.config();
             cfg.pin_cs = 15;
             cfg.pin_rst = -1;
             cfg.pin_busy = -1;
@@ -87,48 +133,23 @@ public:
             cfg.offset_rotation = 4;
             cfg.rgb_order = true;
             cfg.invert = false;
-#elif defined(HARDWARE_ST7789)
-            cfg.memory_width = 240;
-            cfg.memory_height = 320;
-            cfg.panel_width = 240;
-            cfg.panel_height = 320;
-            cfg.offset_rotation = 0;
-            cfg.rgb_order = false;
-#endif
-            _panel_instance.config(cfg);
+            _panel_ili.config(cfg);
+            _panel_ili.setBus(&_bus_instance);
+            _panel_ili.setLight(&_light_instance);
+            {
+                auto cfg_t = _touch_instance.config();
+                cfg_t.x_min = 222;
+                cfg_t.x_max = 3367;
+                cfg_t.y_min = 192;
+                cfg_t.y_max = 3732;
+                cfg_t.bus_shared = true;
+                cfg_t.spi_host = SPI2_HOST;
+                cfg_t.pin_cs = 33;
+                _touch_instance.config(cfg_t);
+                _panel_ili.setTouch(&_touch_instance);
+            }
+            setPanel(&_panel_ili);
         }
-        { 
-            auto cfg = _light_instance.config();
-            cfg.pin_bl      = BACKLIGHT_PIN;
-            cfg.invert      = false;
-            cfg.freq        = 44100;
-            cfg.pwm_channel = 7;
-            _light_instance.config(cfg);
-            _panel_instance.setLight(&_light_instance);
-        }
-        { 
-            auto cfg = _touch_instance.config();
-            cfg.x_min = 222;
-            cfg.x_max = 3367;
-            cfg.y_min = 192;
-            cfg.y_max = 3732;
-#ifdef HARDWARE_ILI9341
-            cfg.bus_shared = true;
-            cfg.spi_host = SPI2_HOST;
-            cfg.pin_cs = 33;
-#elif defined(HARDWARE_ST7789)
-            cfg.bus_shared = false;
-            cfg.spi_host = SPI3_HOST;
-            cfg.pin_sclk = 25;
-            cfg.pin_mosi = 32;
-            cfg.pin_miso = 39;
-            cfg.pin_cs = 33;
-            cfg.pin_int = 36;
-#endif
-            _touch_instance.config(cfg);
-            _panel_instance.setTouch(&_touch_instance);
-        }
-        setPanel(&_panel_instance);
     }
 };
 
@@ -175,18 +196,37 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
     uint16_t touchX, touchY;
     if (tft.getTouchRaw(&touchX, &touchY)) {
         data->state = LV_INDEV_STATE_PR;
-#ifdef HARDWARE_ILI9341
-        data->point.x = constrain(map(touchX, 300, 3800, 0, 320), 0, 320);
-        data->point.y = constrain(map(touchY, 300, 3800, 0, 240), 0, 240);
-#elif defined(HARDWARE_ST7789)
-        data->point.x = constrain(map(touchY, 300, 3800, 0, 320), 0, 320);
-        data->point.y = constrain(map(touchX, 300, 3800, 0, 240), 0, 240);
-#endif
+        if (is_st7789) {
+            data->point.x = constrain(map(touchY, 300, 3800, 0, 320), 0, 320);
+            data->point.y = constrain(map(touchX, 300, 3800, 0, 240), 0, 240);
+        } else {
+            data->point.x = constrain(map(touchX, 300, 3800, 0, 320), 0, 320);
+            data->point.y = constrain(map(touchY, 300, 3800, 0, 240), 0, 240);
+        }
     } else { data->state = LV_INDEV_STATE_REL; }
 }
 
 void load_settings() {
     prefs.begin("drybox", false);
+
+    // Load hardware version first
+    is_st7789 = prefs.getBool("is_st7789", true);
+
+    // Assign pin variables dynamically based on hardware type
+    if (is_st7789) {
+        PIN_HEATER = 19;
+        PIN_FAN = 23;
+        BACKLIGHT_PIN = 21;
+        LED_R = 22;
+        LED_G = 16;
+    } else {
+        PIN_HEATER = 5;
+        PIN_FAN = 23;
+        BACKLIGHT_PIN = 27;
+        LED_R = 4;
+        LED_G = 17;
+    }
+
     hostname = prefs.getString("hostname", "IkeDryBox");
     Kp = prefs.getDouble("kp", 113.0);
     Ki = prefs.getDouble("ki", 0.80);
@@ -216,6 +256,8 @@ void load_settings() {
 void setup() {
     Serial.begin(115200);
     
+    load_settings();
+    
     // pinMode(21, OUTPUT); 
     // digitalWrite(21, LOW);
     pinMode(LED_G, OUTPUT); digitalWrite(LED_G, HIGH);
@@ -223,8 +265,6 @@ void setup() {
     
     // pinMode(BACKLIGHT_PIN, OUTPUT);
     // digitalWrite(BACKLIGHT_PIN, LOW); // Turn on screen
-
-    load_settings();
     
     // Channel PWM 3 and 4 for the LEDs
     ledcSetup(3, 5000, 8); // Channel for Red
@@ -245,12 +285,9 @@ void setup() {
     boxPID.SetMode(AUTOMATIC); boxPID.SetOutputLimits(0, 255);
     boxPID.SetSampleTime(1000); // Synchronize the PID with your sensor
 
+    tft.init_for_board(is_st7789);
     tft.init();
-#ifdef HARDWARE_ILI9341
-    tft.setRotation(0);
-#elif defined(HARDWARE_ST7789)
-    tft.setRotation(1);
-#endif
+    tft.setRotation(is_st7789 ? 1 : 0);
     tft.setBrightness(180); tft.fillScreen(0);
     tft.setCursor(20, 20); tft.setTextColor(0xFFAA00); tft.println("Booting IkeDryBox...");
 
@@ -270,11 +307,11 @@ void setup() {
     }
     
     // Start sensor (one time only)
-#ifdef HARDWARE_ILI9341
-    Wire.begin(21, 22);
-#elif defined(HARDWARE_ST7789)
-    Wire.begin(27, 18);
-#endif
+    if (is_st7789) {
+        Wire.begin(27, 18);
+    } else {
+        Wire.begin(21, 22);
+    }
     if (!sht31.begin(0x44)) {
         Serial.println("SHT31 sensor error!");
     }

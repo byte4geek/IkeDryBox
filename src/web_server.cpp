@@ -128,6 +128,13 @@ const char index_html[] PROGMEM = R"rawliteral(
             <div class="input-group"><label>Screen Timeout (min, 0=off):</label><input type="number" id="scr_to" min="0" step="1"></div>
             <div class="input-group"><label>Red LED:</label><input type="range" id="led_r" min="0" max="255" value="10" oninput="document.getElementById('led_r_val').innerText=this.value"><span id="led_r_val" style="min-width:30px;text-align:center;">10</span></div>
             <div class="input-group"><label>Green LED:</label><input type="range" id="led_g" min="0" max="255" value="10" oninput="document.getElementById('led_g_val').innerText=this.value"><span id="led_g_val" style="min-width:30px;text-align:center;">10</span></div>
+            <div class="input-group">
+                <label>Display Board Type:</label>
+                <select id="is_st7789" style="background:#444; color:white; padding:5px; border-radius:4px; width:150px;">
+                    <option value="false">ILI9341 (Original)</option>
+                    <option value="true">ST7789 (New)</option>
+                </select>
+            </div>
 
             <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
 
@@ -285,6 +292,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                     document.getElementById('led_g').value = c.led_g;
                     document.getElementById('led_r_val').innerText = c.led_r;
                     document.getElementById('led_g_val').innerText = c.led_g;
+                    document.getElementById('is_st7789').value = c.is_st7789 ? "true" : "false";
                     toggleDhcp(c.dhcp);
                 });
             }
@@ -413,13 +421,14 @@ const char index_html[] PROGMEM = R"rawliteral(
                 m_user: document.getElementById('m_user').value,
                 m_pass: document.getElementById('m_pass').value,
                 led_r: parseInt(document.getElementById('led_r').value),
-                led_g: parseInt(document.getElementById('led_g').value)
+                led_g: parseInt(document.getElementById('led_g').value),
+                is_st7789: document.getElementById('is_st7789').value === "true"
             };
             fetch('/api/save_config', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(data)
-            }).then(() => alert("Settings Saved!"));
+            }).then(() => alert("Settings Saved!\n(Device will reboot if Display Board Type was changed)"));
         }
 
         function uploadOTA() {
@@ -651,6 +660,7 @@ void setup_web_server() {
         doc["led_r"] = prefs.getInt("led_r", 10);
         doc["led_g"] = prefs.getInt("led_g", 10);
         doc["chrt_pts"] = prefs.getInt("chrt_pts", 900);
+        doc["is_st7789"] = is_st7789;
         prefs.end();
         
         String res; serializeJson(doc, res);
@@ -725,6 +735,17 @@ void setup_web_server() {
                     chart_max_points = constrain(doc["chrt_pts"].as<int>(), 60, 3600);
                     prefs.putInt("chrt_pts", chart_max_points);
                 }
+
+                // Save hardware version selection
+                bool should_reboot = false;
+                if (doc["is_st7789"].is<bool>()) {
+                    bool new_st = doc["is_st7789"].as<bool>();
+                    if (new_st != is_st7789) {
+                        is_st7789 = new_st;
+                        prefs.putBool("is_st7789", is_st7789);
+                        should_reboot = true;
+                    }
+                }
                 
                 prefs.end();
 
@@ -733,6 +754,13 @@ void setup_web_server() {
 
                 // Force MQTT reconnect so new broker/credentials take effect immediately
                 mqtt_force_reconnect();
+
+                if (should_reboot) {
+                    server.send(200, "text/plain", "OK");
+                    delay(1000);
+                    ESP.restart();
+                    return;
+                }
             }
         }
         server.send(200, "text/plain", "OK");
