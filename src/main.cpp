@@ -54,8 +54,12 @@ int led_g_intensity = 10; // Green LED intensity
 // --- Chart data points ---
 int chart_max_points = 900; // Default 900 points (~30 min at 2s poll)
 
+#ifndef DEFAULT_ST7789_VAL
+#define DEFAULT_ST7789_VAL true
+#endif
+
 // --- Dynamic hardware selection variables ---
-bool is_st7789 = true;
+bool is_st7789 = DEFAULT_ST7789_VAL;
 int PIN_HEATER = 19;
 int PIN_FAN = 23;
 int BACKLIGHT_PIN = 21;
@@ -214,7 +218,7 @@ void load_settings() {
     prefs.begin("drybox", false);
 
     // Load hardware version first
-    is_st7789 = prefs.getBool("is_st7789", true);
+    is_st7789 = prefs.getBool("is_st7789", DEFAULT_ST7789_VAL);
 
     // Assign pin variables dynamically based on hardware type
     if (is_st7789) {
