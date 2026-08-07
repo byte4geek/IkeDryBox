@@ -13,6 +13,8 @@ IkeDryBox is an advanced, ESP32-based DIY smart filament dryer for 3D printing. 
 * **🛡️ Smart Screen Saver:** Auto-dimming "Touch Shield" that turns the screen completely black after 10 minutes of inactivity, protecting the display and preventing phantom touches.
 * **💡 RGB Status LED:** Visual feedback for heating status (pulsing red) and standby mode (dimmed green) using a common-anode of the builtin RGB LED.
 
+NOTE: This software is created in vibe coding using Antigravity/Gemini
+
 ## 🛠️ Hardware Requirements
 * **Microcontroller:** ESP32 with ST7789 chip with builtin LCD color display (2.4" Cheap Yellow Display with resistive touch and builtin RGB led mounted on back of the board) or similar ESP32 board with TFT. [ST7789 LCD Board](https://s.click.aliexpress.com/e/_c3GVNG01) more description and documentations regarding this board are available here [Board Documentations](https://www.lcdwiki.com/2.8inch_ESP32-32E-7789)
 
@@ -125,10 +127,34 @@ By downloading, viewing, or attempting to replicate any part of this project, yo
 
 **IF YOU DO NOT KNOW WHAT YOU ARE DOING, STOP NOW. Do not touch mains voltage. Ask a qualified electrician for help.**
 
-📄 License
-This project is open-source and available under the MIT License.
-
 # Donation
 Buy me a coffee
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VK4CSX9NVQAZU)
+
+📄 License
+This project is open-source and available under the MIT License.
+
+```text
+MIT License
+
+Copyright (c) 2026 byte4geek
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
